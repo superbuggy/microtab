@@ -5,3 +5,5 @@ export const addKey = (object, key, value = null) => {
 
 export const remPixels = () =>
   parseFloat(getComputedStyle(document.documentElement).fontSize);
+
+export const mod = (n, m) => ((n % m) + m) % m;
