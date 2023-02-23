@@ -36,7 +36,6 @@ const tabChord = reactive({ ...props.chord });
 function toggleNote(string, fret) {
   tabChord[string] = tabChord[string] !== fret ? fret : null;
   updateChord(tabChord);
-  console.log(string, fret, stringNumbers);
 }
 </script>
 
