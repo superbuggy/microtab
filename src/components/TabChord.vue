@@ -2,11 +2,11 @@
 import { reactive } from "vue";
 import { useGuitar } from "../state/guitar";
 import { remPixels } from "../helpers";
-import ArrowIcon from "./icons/ArrowIcon.vue";
-import PencilIcon from "./icons/PencilIcon.vue";
-import PlusIcon from "./icons/PlusIcon.vue";
-import TrashIcon from "./icons/TrashIcon.vue";
-const { stringQuantity, divisonsPerOctave } = useGuitar();
+import { useChords } from "../state/chord";
+
+const { updateChord } = useChords();
+
+const { stringQuantity, divisonsPerOctave, stringNumbers } = useGuitar();
 
 const VIEWBOX_X_MAX = 600;
 const VIEWBOX_Y_MAX = 1000;
@@ -35,65 +35,58 @@ const tabChord = reactive({ ...props.chord });
 
 function toggleNote(string, fret) {
   tabChord[string] = tabChord[string] !== fret ? fret : null;
+  updateChord(tabChord);
+  console.log(string, fret, stringNumbers);
 }
 </script>
 
 <template>
-  <div class="tab-chord">
-    <svg :viewBox="`0 0 ${VIEWBOX_X_MAX} ${VIEWBOX_Y_MAX}`">
-      <text :x="x - textOffsetX" :y="y + textOffsetY" :font-size="fontSize">
-        {{ startingFret }}
-      </text>
-      <rect :x="x" :y="y" :width="width" :height="height" />
-      <line
-        v-for="fret in reachableFrets"
-        :key="fret"
-        :x1="x"
-        :y1="fret * fretSpacing + y"
-        :x2="x + width"
-        :y2="fret * fretSpacing + y"
-      />
+  <svg :viewBox="`0 0 ${VIEWBOX_X_MAX} ${VIEWBOX_Y_MAX}`">
+    <text :x="x - textOffsetX" :y="y + textOffsetY" :font-size="fontSize">
+      {{ startingFret }}
+    </text>
+    <rect :x="x" :y="y" :width="width" :height="height" />
+    <line
+      v-for="fret in reachableFrets"
+      :key="fret"
+      :x1="x"
+      :y1="fret * fretSpacing + y"
+      :x2="x + width"
+      :y2="fret * fretSpacing + y"
+    />
 
-      <line
-        v-for="string in stringQuantity - 2"
+    <line
+      v-for="string in stringQuantity - 2"
+      :key="string"
+      :x1="string * stringSpacing + x"
+      :y1="y"
+      :x2="string * stringSpacing + x"
+      :y2="y + height"
+    />
+    <g v-for="fret in reachableFrets + 1" :key="fret">
+      <circle
+        v-for="(string, index) in stringNumbers"
         :key="string"
-        :x1="string * stringSpacing + x"
-        :y1="y"
-        :x2="string * stringSpacing + x"
-        :y2="y + height"
+        :cy="(fret - 1) * fretSpacing + y"
+        :cx="index * stringSpacing + x"
+        :r="stringSpacing / 3"
+        @click="toggleNote(`string${string}`, startingFret + fret - 1)"
+        :class="{
+          active: tabChord[`string${string}`] === startingFret + fret - 1,
+        }"
       />
-      <g v-for="fret in reachableFrets + 1" :key="fret">
-        <circle
-          v-for="string in stringQuantity"
-          :key="string"
-          :cy="(fret - 1) * fretSpacing + y"
-          :cx="(string - 1) * stringSpacing + x"
-          :r="stringSpacing / 3"
-          @click="toggleNote(`string${string}`, startingFret + fret - 1)"
-          :class="{ active: tabChord[`string${string}`] === startingFret + fret - 1 }"
-        />
-      </g>
-      <text :x="x - textOffsetX" :y="y + height + textOffsetY" :font-size="fontSize">
-        {{ endingFret }}
-      </text>
-    </svg>
-  <div class="icons">
-    <ArrowIcon/>
-    <PencilIcon/>
-    <TrashIcon/>
-    <PlusIcon/>
-  </div>
-    
-  </div>
+    </g>
+    <text :x="x - textOffsetX" :y="y + height + textOffsetY" :font-size="fontSize">
+      {{ endingFret }}
+    </text>
+  </svg>
 </template>
 
 <style scoped>
 svg {
   width: 200px;
 }
-div.icons svg {
-  width: 2rem;
-}
+
 svg text {
   font-family: "Fondamento", cursive;
   text-anchor: end;
