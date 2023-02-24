@@ -39,27 +39,31 @@ export function useChords() {
     chords.value.splice(matchedChordIndex, 1);
   }
 
-  function playChord(chord) {
-    // const chord = findChord(id);
-    const notes = Object.entries(chord)
+  function chordNotes(chord) {
+    return Object.entries(chord)
       .filter(([key, fret]) => key !== "id" && fret !== null)
       .map(([stringName, fret]) =>
         noteFromStepsAbove(tuning.value[stringName], fret)
       );
-
-    console.log(notes);
-
-    const synth = new Tone.PolySynth().toDestination();
-    // set the attributes across all the voices using 'set'
-    // synth.set({ detune: -1200 });
-    // play a chord
-    synth.triggerAttackRelease(pitchesFromNotes(notes), 1);
-
-    // console.log(tet24, chord, chords, id);
   }
+
+  function chordPitches(chord) {
+    const notes = chordNotes(chord);
+    return pitchesFromNotes(notes);
+  }
+
   function playChords() {
-    chords.value.forEach(playChord);
+    const chordsAsPitches = chords.value.map(chordPitches);
+    const synth = new Tone.PolySynth().toDestination();
+    const part = new Tone.Part(
+      (time, { pitches }) => {
+        synth.triggerAttackRelease(pitches, 1, time);
+      },
+      chordsAsPitches.map((pitches, time) => ({ pitches, time }))
+    );
+    part.start();
+    Tone.Transport.start();
   }
 
-  return { chords, updateChord, removeChord, addChord, playChord, playChords };
+  return { chords, updateChord, removeChord, addChord, playChords };
 }

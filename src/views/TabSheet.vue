@@ -6,7 +6,7 @@ import PlusIcon from "../components/icons/PlusIcon.vue";
 import TrashIcon from "../components/icons/TrashIcon.vue";
 import { useChords } from "../state/chord";
 
-const { chords, playChords } = useChords();
+const { chords, playChords, addChord } = useChords();
 </script>
 
 <template>
@@ -17,7 +17,7 @@ const { chords, playChords } = useChords();
     <ArrowIcon @click="playChords" />
     <PencilIcon />
     <TrashIcon />
-    <PlusIcon />
+    <PlusIcon @click="addChord"/>
   </div>
 </template>
 
