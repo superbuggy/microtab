@@ -7,3 +7,4 @@ export const remPixels = () =>
   parseFloat(getComputedStyle(document.documentElement).fontSize);
 
 export const mod = (n, m) => ((n % m) + m) % m;
+export const isEven = (i) => i % 2 === 0;
