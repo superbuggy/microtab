@@ -60,8 +60,6 @@ export const scalarIntervallicDistances = {
     3, 5, 2, 4, 3, 5, 2,
   ],
   "Dastgah·E Nava, Maqam ushaq masri ": [4, 2, 4, 4, 3, 3, 4],
-  // page `13/27 in Sword Icosikaitetraphonic Scales for Guitar
-  // "Second plagal byzantine liturgical mode": [2, 7, 1, 4, 2, 7, 1],
   "Second plagal byzantine liturgical mode": [2, 7, 1, 4, 2, 7, 1],
   "Quasi-equal Pentatonic (from A) / Haba's Pentatonic I MOS Bug - 4L 1 s": [
     5, 5, 4, 5, 5,

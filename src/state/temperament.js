@@ -65,7 +65,17 @@ export function useTemperament() {
     return foundNote;
   };
 
+  const distanceBetweenNotes = (lowerNote, higherNote) =>
+    noteNames.indexOf(higherNote) - noteNames.indexOf(lowerNote);
+
   window.tet24 = tet24;
-  window.pitchFromNote = pitchFromNote;
-  return { tet24, pitchFromNote, pitchesFromNotes, noteFromStepsAbove };
+  window.distanceBetweenNotes = distanceBetweenNotes;
+
+  return {
+    tet24,
+    pitchFromNote,
+    pitchesFromNotes,
+    noteFromStepsAbove,
+    distanceBetweenNotes,
+  };
 }

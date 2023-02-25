@@ -1,5 +1,8 @@
 import { ref } from "vue";
+import { scales } from "../definitions/scales";
+import { useTemperament } from "./temperament";
 
+const { distanceBetweenNotes } = useTemperament();
 
 const DEFAULT_STRING_QUANTITY = 6;
 const DEFAULT_OCTAVE_DIVISONS = 24;
@@ -20,6 +23,33 @@ export function useGuitar() {
     )
   );
 
+  const initializedGuitarNotes = () =>
+    Object.fromEntries(
+      stringNumbers.map((stringNumber) => [`string${stringNumber}`, []])
+    );
+
+  const frettedNotes = ref(initializedGuitarNotes());
+
+  const scaleNames = Object.keys(scales);
+
+  const adaptedScales = Object.fromEntries(
+    Object.entries(scales).map(([scaleName, scale]) => {
+      const rootNote = "B1";
+      const guitar = initializedGuitarNotes();
+      for (const stringName in guitar) {
+        const note = tuning.value[stringName];
+        const distance = distanceBetweenNotes(rootNote, note);
+        const transposedScale = scale.map((step) => step + distance);
+        guitar[stringName] = transposedScale;
+      }
+      return [scaleName, guitar];
+    })
+  );
+
+  function selectScale(scaleName) {
+    frettedNotes.value = adaptedScales[scaleName];
+    console.log(scaleName, frettedNotes.value)
+  }
   // function updateStringQuantity(quantity) {
   //   stringQuantity.value = quantity;
   // }
@@ -32,6 +62,9 @@ export function useGuitar() {
     divisonsPerOctave,
     tuning,
     stringNumbers,
+    frettedNotes,
+    scaleNames,
+    selectScale,
     // updateStringQuantity,
     // updatedivisonsPerOctave,
   };

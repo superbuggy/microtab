@@ -1,5 +1,6 @@
 <script setup>
 import TabChord from "../components/TabChord.vue";
+import FretBoard from "../components/FretBoard.vue";
 import ArrowIcon from "../components/icons/ArrowIcon.vue";
 import PencilIcon from "../components/icons/PencilIcon.vue";
 import PlusIcon from "../components/icons/PlusIcon.vue";
@@ -10,6 +11,7 @@ const { chords, playChords, addChord } = useChords();
 </script>
 
 <template>
+  <fret-board />
   <main>
     <tab-chord v-for="chord in chords" :key="chord.id" :chord="chord" />
   </main>
@@ -17,15 +19,11 @@ const { chords, playChords, addChord } = useChords();
     <ArrowIcon @click="playChords" />
     <PencilIcon />
     <TrashIcon />
-    <PlusIcon @click="addChord"/>
+    <PlusIcon @click="addChord" />
   </div>
 </template>
 
 <style scoped lang="scss">
-svg {
-  width: 200px;
-}
-
 main {
   border: 1px solid black;
   padding: 1.5rem;

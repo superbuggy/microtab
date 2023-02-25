@@ -1,18 +1,30 @@
 <script setup>
-import { reactive } from "vue";
+// import { reactive } from "vue";
 import { useGuitar } from "../state/guitar";
 import { remPixels, isEven } from "../helpers";
-import { useChords } from "../state/chord";
 
-const { updateChord } = useChords();
+const {
+  stringQuantity,
+  divisonsPerOctave,
+  stringNumbers,
+  frettedNotes,
+  scaleNames,
+  selectScale,
+} = useGuitar();
 
-const { stringQuantity, divisonsPerOctave, stringNumbers } = useGuitar();
+frettedNotes.value["string1"].push(0, 3, 6, 9, 12);
+frettedNotes.value["string2"].push(0, 3, 6, 9, 12);
+frettedNotes.value["string3"].push(0, 3, 6, 9, 12);
+// frettedNotes.value["string4"].push(0, 3, 6, 9, 12);
+// frettedNotes.value["string5"].push(0, 3, 6, 9, 12);
+// frettedNotes.value["string6"].push(0, 3, 6, 9, 12);
+console.log(frettedNotes.value);
 
 const VIEWBOX_X_MAX = 600;
-const VIEWBOX_Y_MAX = 1000;
-const REACHABLE_FRETS_PERCENTAGE = 5 / 12;
+const VIEWBOX_Y_MAX = 4000;
+const REACHABLE_FRETS_PERCENTAGE = 24 / 12;
 const x = VIEWBOX_X_MAX / 4;
-const y = VIEWBOX_Y_MAX / 4;
+const y = VIEWBOX_Y_MAX / 8;
 const width = VIEWBOX_X_MAX / 2;
 const height = VIEWBOX_Y_MAX / 2;
 
@@ -32,22 +44,25 @@ const fontSize = remPixels() * 2.5;
 const textOffsetX = 0.75 * fontSize;
 const textOffsetY = 0.33 * fontSize;
 
-const props = defineProps({
-  // id: String,
-  chord: Object,
-});
-
-const tabChord = reactive({ ...props.chord });
-
-function toggleNote(string, fret) {
-  tabChord[string] = tabChord[string] !== fret ? fret : null;
-  updateChord(tabChord);
-}
+const selectedScale = null;
 </script>
 
 <template>
-  <svg :viewBox="`0 0 ${VIEWBOX_X_MAX} ${VIEWBOX_Y_MAX}`">
-    <text :x="x - textOffsetX" :y="y + textOffsetY" :font-size="fontSize">
+  <select name="" id="" @change="selectScale($event.target.value)">
+    <option v-for="scaleName in scaleNames" :key="scaleName" :value="scaleName">
+      {{ scaleName }}
+    </option>
+  </select>
+  <svg
+    :viewBox="`0 0 ${VIEWBOX_X_MAX} ${VIEWBOX_Y_MAX}`"
+    transform="rotate(270) translate(0 500)"
+  >
+    <text
+      :x="x - textOffsetX"
+      :y="y + textOffsetY"
+      :font-size="fontSize"
+      :transform="`rotate(90 ${x} ${y})`"
+    >
       {{ startingFret }}
     </text>
     <rect :x="x" :y="y" :width="width" :height="height" class="tab" />
@@ -60,14 +75,21 @@ function toggleNote(string, fret) {
       :height="fretSpacing"
       fill="#eee"
     />
-    <circle
-      v-for="fretDot in fretDots"
-      :key="fretDot"
-      :cy="(fretDot) * fretSpacing + y"
-      :cx="width"
-      :r="stringSpacing / 2.5"
-      fill="#999"
-    />
+    <g v-for="fretDot in fretDots" :key="fretDot">
+      <circle
+        :cx="(fretDot + 1) % 12 === 0 ? width * 0.8 : width"
+        :cy="fretDot * fretSpacing + y"
+        :r="stringSpacing / 2.5"
+        fill="#999"
+      />
+      <circle
+        v-if="(fretDot + 1) % 12 === 0"
+        :cx="width * 1.2"
+        :cy="fretDot * fretSpacing + y"
+        :r="stringSpacing / 2.5"
+        fill="#999"
+      />
+    </g>
     <line
       v-for="fret in reachableFrets"
       :key="fret"
@@ -93,13 +115,18 @@ function toggleNote(string, fret) {
         :cy="(fret - 1) * fretSpacing + y"
         :cx="index * stringSpacing + x"
         :r="stringSpacing / 3"
-        @click="toggleNote(`string${string}`, startingFret + fret - 1)"
         :class="{
-          active: tabChord[`string${string}`] === startingFret + fret - 1,
+          active: frettedNotes[`string${string}`].indexOf(fret) !== -1,
         }"
       />
     </g>
-    <text :x="x - textOffsetX" :y="y + height + textOffsetY" :font-size="fontSize">
+    <text
+      :x="x - textOffsetX"
+      :y="y + height + textOffsetY"
+      :font-size="fontSize"
+      :transform="`rotate(90 ${x - textOffsetX} ${y + height + textOffsetY + 2})`"
+      transform-origin=""
+    >
       {{ endingFret }}
     </text>
   </svg>
@@ -107,7 +134,9 @@ function toggleNote(string, fret) {
 
 <style scoped>
 svg {
+  /* width: 800px; */
   width: 200px;
+  /* height: 200px; */
 }
 
 svg text {
@@ -133,10 +162,5 @@ circle.fret {
 
 circle.active.fret {
   fill: #000;
-}
-
-circle:hover {
-  stroke: rgb(113, 0, 188);
-  stroke-width: 0.5rem;
 }
 </style>
