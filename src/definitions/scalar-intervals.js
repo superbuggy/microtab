@@ -117,4 +117,11 @@ export const scalarIntervallicDistances = {
   "Ivan Wyschnegradsky's diatonicized chromatic scale - MOS 11 L 2s (Agmon diatonic D85)":
     [2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1],
   "Maqam Rahat al-Arwah": [3, 4, 2, 6, 2, 4, 2, 1],
+  Ionian: [4, 4, 2, 4, 4, 4, 2],
+  Dorian: [4, 2, 4, 4, 4, 2, 4],
+  Phrygian: [2, 4, 4, 4, 2, 4, 4],
+  Lydian: [4, 4, 4, 2, 4, 4, 2],
+  Mixolydian: [4, 4, 2, 4, 4, 2, 4],
+  Aeolian: [4, 2, 4, 4, 2, 4, 4],
+  Locrian: [2, 4, 4, 2, 4, 4, 4],
 };

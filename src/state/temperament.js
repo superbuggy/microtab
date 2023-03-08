@@ -6,7 +6,7 @@ const tet24schema = {
   source: "https://en.wikipedia.org/wiki/Quarter_tone#Quarter-tone_scale",
   referenceName: "A",
   referencePitch: 440,
-  referenceOctave: 2,
+  referenceOctave: 4,
   octaveBaseName: "C",
   notes: {
     C: ["C", 0],
@@ -68,11 +68,9 @@ export function useTemperament() {
   const distanceBetweenNotes = (lowerNote, higherNote) =>
     noteNames.indexOf(higherNote) - noteNames.indexOf(lowerNote);
 
-  window.tet24 = tet24;
-  window.distanceBetweenNotes = distanceBetweenNotes;
-
   return {
     tet24,
+    noteNames,
     pitchFromNote,
     pitchesFromNotes,
     noteFromStepsAbove,

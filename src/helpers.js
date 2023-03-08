@@ -9,6 +9,7 @@ export const remPixels = () =>
 export const mod = (n, m) => ((n % m) + m) % m;
 
 export const isEven = (i) => i % 2 === 0;
+export const isOdd = (i) => i % 2 !== 0;
 
 // Bjorklund algorithm from https://gist.github.com/withakay/1286731
 
@@ -86,26 +87,11 @@ export const rotate = (array, times = 0) => {
   return rotatedArray;
 };
 
-export const scaleFromIntervallicDistances = (steps, start = 0) =>
-  steps.reduce(
-    (builtScale, intervallicDistance) => {
-      builtScale.push(intervallicDistance + builtScale.at(-1));
-      return builtScale;
-    },
-    [start]
+export const range = (beginning, end) => {
+  const directionMultipler = beginning > end ? -1 : 1;
+  const length = Math.abs(end - beginning + directionMultipler);
+  return Array.from(
+    { length },
+    (_, index) => index * directionMultipler + beginning
   );
-
-export const intervallicDistances = (steps) =>
-  steps.slice(1).reduce(
-    (intervals, step, index) => {
-      intervals.push(step - steps[index]);
-      return intervals;
-    },
-    [steps[0]]
-  );
-
-export const compareCentsForEDO = (centsValues, edo) =>
-  centsValues.map((i) => Math.round(i / (1200 / edo)) * (1200 / edo) - i);
-
-export const centsToEDO = (centsValues, edo) =>
-  centsValues.map((i) => Math.round(i / (1200 / edo)));
+};

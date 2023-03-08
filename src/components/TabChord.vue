@@ -63,7 +63,7 @@ function toggleNote(string, fret) {
     <circle
       v-for="fretDot in fretDots"
       :key="fretDot"
-      :cy="(fretDot) * fretSpacing + y"
+      :cy="fretDot * fretSpacing + y"
       :cx="width"
       :r="stringSpacing / 2.5"
       fill="#999"
