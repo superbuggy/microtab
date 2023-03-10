@@ -61,6 +61,7 @@ function toggleNote(string, fret) {
       fill="#eee"
     />
     <circle
+      class="fret-dot"
       v-for="fretDot in fretDots"
       :key="fretDot"
       :cy="fretDot * fretSpacing + y"
@@ -135,7 +136,7 @@ circle.active.fret {
   fill: #000;
 }
 
-circle:hover {
+circle:not(.fret-dot):hover {
   stroke: rgb(113, 0, 188);
   stroke-width: 0.5rem;
 }
