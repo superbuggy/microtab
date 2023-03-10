@@ -6,7 +6,7 @@ import { useTemperament } from "./temperament.js";
 import * as Tone from "tone";
 
 const { stringQuantity, tuning } = useGuitar();
-const { pitchesFromNotes, noteFromStepsAbove } = useTemperament();
+const { notes, noteFromStepsAbove } = useTemperament();
 
 function initializedChord() {
   return Array.from({ length: stringQuantity.value }).reduce(
@@ -48,8 +48,12 @@ export function useChords() {
   }
 
   function chordPitches(chord) {
-    const notes = chordNotes(chord);
-    return pitchesFromNotes(notes);
+    const notesInChord = chordNotes(chord);
+    console.log(notesInChord);
+    return notesInChord.map(
+      (note) =>
+        notes.find((noteToMatch) => note === noteToMatch.pitch).frequency
+    );
   }
 
   function playChords() {
