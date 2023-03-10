@@ -3,6 +3,8 @@ export const addKey = (object, key, value = null) => {
   return object;
 };
 
+export const sum = (numbers) => numbers.reduce((sum, number) => sum + number);
+
 export const remPixels = () =>
   parseFloat(getComputedStyle(document.documentElement).fontSize);
 
