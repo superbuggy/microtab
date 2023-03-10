@@ -1,7 +1,10 @@
 <script setup>
 // import { reactive } from "vue";
 import { useGuitar } from "../state/guitar";
+import { useTemperament } from "../state/temperament";
 import { remPixels, isOdd, range } from "../helpers";
+
+const { pitchClassNames } = useTemperament();
 
 const {
   stringQuantity,
@@ -10,10 +13,15 @@ const {
   frettedNotes,
   scaleNames,
   selectScale,
+  selectedScaleName,
   selectedScale,
   notesPerString,
   selectNotesPerString,
 } = useGuitar();
+
+const noteNames = selectedScale.value.pitchClassNumbers.map(
+  (pitchNumber) => pitchClassNames[pitchNumber % selectedScale.value.period]
+);
 
 const VIEWBOX_X_MAX = 600;
 const VIEWBOX_Y_MAX = 4000;
@@ -45,12 +53,19 @@ const fretHeights = fretSpacing.reduce((distances, length, index) => {
   distances.push(length - fretDistances[index]);
   return distances;
 }, []);
-console.log(fretHeights);
 const reachableFrets = range(startingFret, endingFret);
-// const darkFrets = reachableFrets.map((_, i) => i + startingFret + 1).filter(isOdd);
 const fretDots = [3, 5, 7, 9, 12, 15, 17, 19, 21, 24]
   .map((i) => i * 2 - 1)
   .filter((fret) => fret > startingFret && fret < endingFret);
+
+const hslForNote = (note) => {
+  if (!note) return;
+  const degree = selectedScale.value.pitchClassNumbers
+    .map((pitchClassNumber) => pitchClassNumber % selectedScale.value.period)
+    .indexOf(note.note.pitchClassNumber);
+  const hue = (360 * degree) / selectedScale.value.degrees;
+  return `hsl(${hue}, 100%, 45%)`;
+};
 
 const stringSpacing = width / (stringQuantity.value - 1);
 const fontSize = remPixels() * 2.5;
@@ -64,7 +79,7 @@ const textOffsetY = fontSize;
       v-for="scaleName in scaleNames"
       :key="scaleName"
       :value="scaleName"
-      :selected="scaleName === selectedScale"
+      :selected="scaleName === selectedScaleName"
     >
       {{ scaleName }}
     </option>
@@ -83,6 +98,15 @@ const textOffsetY = fontSize;
       }}
     </option>
   </select>
+  <div>
+    <span> Intervals{{ selectedScale.intervals }}</span>
+  </div>
+  <div>
+    <span>
+      Notes
+      {{ noteNames }}</span
+    >
+  </div>
   <div class="svg-container">
     <svg :viewBox="`0 0 ${VIEWBOX_X_MAX} ${VIEWBOX_Y_MAX}`">
       <text
@@ -103,18 +127,7 @@ const textOffsetY = fontSize;
         {{ endingFret }}
       </text>
       <rect :x="x" :y="y" :width="width" :height="height" class="tab" />
-      <!-- <rect
-        v-for="fret in darkFrets"
-        :key="fret"
-        :x="x"
-        :y="fretSpacing[fret] + y"
-        :width="width"
-        :height="fretHeights[fret]"
-        fill="#eee"
-      /> -->
-
       <g v-for="fret in reachableFrets" :key="fret">
-        <text>{{ fret }}</text>
         <rect
           v-if="isOdd(fret + 1)"
           :key="fret"
@@ -125,6 +138,7 @@ const textOffsetY = fontSize;
           fill="#eee"
         />
         <line
+          v-if="fretSpacing[fret]"
           :key="fret"
           :x1="x"
           :y1="fretSpacing[fret] + y"
@@ -139,8 +153,15 @@ const textOffsetY = fontSize;
           :cy="fretDistances[fret] + y"
           :cx="index * stringSpacing + x"
           :r="stringSpacing / 5"
+          :fill="
+            hslForNote(
+              frettedNotes[`string${string}`].find((note) => note.fretNumber === fret)
+            )
+          "
           :class="{
-            active: frettedNotes[`string${string}`].indexOf(fret) !== -1,
+            active: frettedNotes[`string${string}`].find(
+              (note) => note.fretNumber === fret
+            ),
           }"
         >
           <title>{{ fret }}</title>
@@ -202,7 +223,7 @@ rect.tab {
   fill: #fff;
 }
 
-circle.fret {
+circle.fret:not(.active) {
   fill: transparent;
 }
 circle.fret-dot {
@@ -210,6 +231,6 @@ circle.fret-dot {
 }
 
 circle.active.fret {
-  fill: #333;
+  /* fill: #333; */
 }
 </style>
