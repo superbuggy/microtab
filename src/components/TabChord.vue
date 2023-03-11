@@ -9,12 +9,12 @@ const { updateChord } = useChords();
 const { stringQuantity, divisonsPerOctave, stringNumbers } = useGuitar();
 
 const VIEWBOX_X_MAX = 600;
-const VIEWBOX_Y_MAX = 1000;
+const VIEWBOX_Y_MAX = 600;
 const REACHABLE_FRETS_PERCENTAGE = 5 / 12;
 const x = VIEWBOX_X_MAX / 4;
-const y = VIEWBOX_Y_MAX / 4;
+const y = VIEWBOX_Y_MAX / 16;
 const width = VIEWBOX_X_MAX / 2;
-const height = VIEWBOX_Y_MAX / 2;
+const height = VIEWBOX_Y_MAX * 0.875;
 
 const startingFret = 0;
 const reachableFrets = Math.round(REACHABLE_FRETS_PERCENTAGE * divisonsPerOctave.value);
