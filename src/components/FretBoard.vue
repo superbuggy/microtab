@@ -1,8 +1,10 @@
+<!-- eslint-disable prettier/prettier -->
 <script setup>
 // import { reactive } from "vue";
 import { useGuitar } from "../state/guitar";
 import { useTemperament } from "../state/temperament";
 import { remPixels, isOdd, range } from "../helpers";
+import { computed } from "vue";
 
 const { pitchClassNames } = useTemperament();
 
@@ -19,8 +21,10 @@ const {
   selectNotesPerString,
 } = useGuitar();
 
-const noteNames = selectedScale.value.pitchClassNumbers.map(
-  (pitchNumber) => pitchClassNames[pitchNumber % selectedScale.value.period]
+const noteNames = computed(() =>
+  selectedScale.value.pitchClassNumbers.map(
+    (pitchNumber) => pitchClassNames[pitchNumber % selectedScale.value.period]
+  )
 );
 
 const VIEWBOX_X_MAX = 600;
@@ -58,13 +62,16 @@ const fretDots = [3, 5, 7, 9, 12, 15, 17, 19, 21, 24]
   .map((i) => i * 2 - 1)
   .filter((fret) => fret > startingFret && fret < endingFret);
 
-const hslForNote = (note) => {
+const hue = (degree, upperBound) => (360 * degree) / upperBound;
+const hsl = (degree, upperBound, l = 75) =>
+  `hsl(${hue(degree, upperBound)}, 100%, ${l}%)`;
+
+const hslForNote = (note, l = 50) => {
   if (!note) return;
   const degree = selectedScale.value.pitchClassNumbers
     .map((pitchClassNumber) => pitchClassNumber % selectedScale.value.period)
     .indexOf(note.note.pitchClassNumber);
-  const hue = (360 * degree) / selectedScale.value.degrees;
-  return `hsl(${hue}, 100%, 45%)`;
+  return hsl(degree, selectedScale.value.degrees, l);
 };
 
 const stringSpacing = width / (stringQuantity.value - 1);
@@ -102,9 +109,18 @@ const textOffsetY = fontSize;
     <span> Intervals{{ selectedScale.intervals }}</span>
   </div>
   <div>
-    <span>
-      Notes
-      {{ noteNames }}</span
+    Notes
+    <span
+      v-for="(noteName, index) in noteNames.slice(0, noteNames.length - 1)"
+      :key="index"
+      class="note-badge"
+      :style="`color: ${hsl(index, noteNames.length - 1)}; background-color:${hsl(
+        index,
+        noteNames.length,
+        12
+      )};`"
+    >
+      {{ noteName }}&nbsp;</span
     >
   </div>
   <div class="svg-container">
@@ -127,6 +143,7 @@ const textOffsetY = fontSize;
         {{ endingFret }}
       </text>
       <rect :x="x" :y="y" :width="width" :height="height" class="tab" />
+
       <g v-for="fret in reachableFrets" :key="fret">
         <rect
           v-if="isOdd(fret + 1)"
@@ -145,27 +162,6 @@ const textOffsetY = fontSize;
           :x2="x + width"
           :y2="fretSpacing[fret] + y"
         />
-
-        <circle
-          v-for="(string, index) in stringNumbers"
-          class="fret"
-          :key="string"
-          :cy="fretDistances[fret] + y"
-          :cx="index * stringSpacing + x"
-          :r="stringSpacing / 5"
-          :fill="
-            hslForNote(
-              frettedNotes[`string${string}`].find((note) => note.fretNumber === fret)
-            )
-          "
-          :class="{
-            active: frettedNotes[`string${string}`].find(
-              (note) => note.fretNumber === fret
-            ),
-          }"
-        >
-          <title>{{ fret }}</title>
-        </circle>
       </g>
       <line
         v-for="string in stringQuantity - 2"
@@ -190,6 +186,29 @@ const textOffsetY = fontSize;
           class="fret-dot"
         />
       </g>
+      <g v-for="fret in reachableFrets" :key="fret">
+        <circle
+          v-for="(string, index) in stringNumbers"
+          class="fret"
+          :key="string"
+          :cy="fretDistances[fret] + y"
+          :cx="index * stringSpacing + x"
+          :r="Math.min(stringSpacing / 5, fretHeights[fret] * 0.333)"
+          :fill="
+            hslForNote(
+              frettedNotes[`string${string}`].find((note) => note.fretNumber === fret)
+            )
+          "
+          stroke-width="4"
+          :class="{
+            active: frettedNotes[`string${string}`].find(
+              (note) => note.fretNumber === fret
+            ),
+          }"
+        >
+          <title>{{ fret }}</title>
+        </circle>
+      </g>
     </svg>
   </div>
 </template>
@@ -206,6 +225,15 @@ div.svg-container {
   max-height: 200px;
 }
 
+.note-badge {
+  display: inline-block;
+  border-radius: 0.375rem;
+  margin: 0.5rem;
+  padding: 0.125rem 0.25rem;
+  min-width: 2rem;
+  text-align: center;
+}
+
 svg text {
   font-family: "Fondamento", cursive;
   text-anchor: end;
@@ -218,6 +246,7 @@ line {
 rect {
   /* stroke: #000; */
 }
+
 rect.tab {
   stroke: #000;
   fill: #fff;
@@ -226,11 +255,13 @@ rect.tab {
 circle.fret:not(.active) {
   fill: transparent;
 }
+
 circle.fret-dot {
   fill: #ccc;
 }
 
 circle.active.fret {
   /* fill: #333; */
+  stroke: rgba(0, 0, 0, 0.4);
 }
 </style>
