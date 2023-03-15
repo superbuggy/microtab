@@ -18,9 +18,8 @@ function save() {
   const json = JSON.stringify(chords.value);
   const blob = new Blob([json], { type: "application/json" });
   const url = URL.createObjectURL(blob);
-
   const a = document.createElement("a");
-  const fileName = "chords.json";
+  const fileName = "microtab-chords.json";
   a.download = fileName;
   a.href = url;
   a.textContent = `Download ${fileName}`;
