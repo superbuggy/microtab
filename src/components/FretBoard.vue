@@ -3,6 +3,7 @@ import { useGuitar } from "../state/guitar";
 import { useTemperament } from "../state/temperament";
 import { remPixels, isOdd, range } from "../helpers";
 import { computed } from "vue";
+import * as Tone from "tone";
 
 const { pitchClassNames } = useTemperament();
 
@@ -10,7 +11,7 @@ const {
   stringQuantity,
   divisonsPerOctave,
   stringNumbers,
-  frettedNotes,
+  scaleNotesOnStrings,
   scaleNames,
   selectScale,
   selectedScaleName,
@@ -36,6 +37,9 @@ const x = VIEWBOX_X_MAX / 4;
 const y = VIEWBOX_Y_MAX / 8;
 const width = VIEWBOX_X_MAX / 2;
 const height = VIEWBOX_Y_MAX / 2;
+
+// const
+// const frettedNotes =Object.entries(scaleNotesOnStrings.value)
 
 const fretDistancesFromNut = (fretsQuantity, scaleLength) => {
   // Note: 35.124 or 17.562 * 2 (for 24) is closer for 24 EDO
@@ -82,6 +86,36 @@ const stringSpacing = width / (stringQuantity.value - 1);
 const fontSize = remPixels() * 2.5;
 const textOffsetX = 0.5 * fontSize;
 const textOffsetY = fontSize;
+
+function playScale() {
+  Tone.start();
+  const bps = 8;
+
+  const ascendingScale = Object.values(scaleNotesOnStrings.value)
+    .flat()
+    .map(({ note }, index) => ({
+      time: index / bps,
+      note: [note.frequency * 2],
+    }));
+  const notesToPlay = [
+    ...ascendingScale,
+    ...ascendingScale
+      .slice()
+      .reverse()
+      .map(({ note }, index) => ({
+        time: ascendingScale.length / bps + index / bps,
+        note,
+      })),
+  ];
+  const synth = new Tone.PolySynth().toDestination();
+  const part = new Tone.Part((time, { note }) => {
+    console.log(note);
+    synth.triggerAttackRelease(note, 0.25, time);
+  }, notesToPlay);
+  console.log(part);
+  part.start();
+  Tone.Transport.start();
+}
 </script>
 
 <template>
@@ -111,6 +145,7 @@ const textOffsetY = fontSize;
       </option>
     </select>
     <input type="number" name="" id="" v-model="startingFromFret" />
+    <button @click="playScale">Play Scale</button>
   </div>
   <div>
     <span> Intervals {{ selectedScale.intervals.join(" ") }}</span>
@@ -204,14 +239,14 @@ const textOffsetY = fontSize;
           :r="Math.min(stringSpacing / 5, fretHeights[fret] * 0.333)"
           :fill="
             hslForNote(
-              frettedNotes[`string${string}`].find(
+              scaleNotesOnStrings[`string${string}`].find(
                 (note) => note.fretNumber === fret
               )
-            )
+            ) // TODO: improve performance by not using find in a v-for
           "
           stroke-width="4"
           :class="{
-            active: frettedNotes[`string${string}`].find(
+            active: scaleNotesOnStrings[`string${string}`].find(
               (note) => note.fretNumber === fret
             ),
           }"
