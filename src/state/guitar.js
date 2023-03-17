@@ -20,7 +20,7 @@ const tuning = ref(
     ])
   )
 );
-
+const startingFromFret = ref(0);
 const lowestNote = tuning.value[`string${stringNumbers[0]}`];
 const scales = scalesFor(lowestNote.replace(/\d/, ""));
 const selectedScaleName = ref("Ionian");
@@ -62,14 +62,22 @@ export function useGuitar() {
   const fretboardScale = computed(() => {
     const guitar = initializedGuitarNotes();
     for (const stringName in guitar) {
-      const stringRootNote = tuning.value[stringName];
-      let offset = distanceBetweenNotes(lowestNote, stringRootNote);
+      const startingNoteOnString = tuning.value[stringName];
+      let offset = distanceBetweenNotes(lowestNote, startingNoteOnString);
       const previousStringName = stringName.replace(/\d/, (n) => +n + 1);
 
       let distanceBetweenStrings = guitar[previousStringName]
-        ? distanceBetweenNotes(tuning.value[previousStringName], stringRootNote)
+        ? distanceBetweenNotes(
+            tuning.value[previousStringName],
+            startingNoteOnString
+          )
         : 0;
-      const stringScale = scaleForGuitar(offset, offset + 48);
+      const stringScale = scaleForGuitar(offset, offset + 48).map(
+        ({ note, fretNumber }) => ({
+          note,
+          fretNumber: fretNumber + startingFromFret.value,
+        })
+      );
       guitar[stringName] = notesPerString.value
         ? stringScale
             .filter(({ fretNumber }) => {
@@ -103,6 +111,7 @@ export function useGuitar() {
     selectedScale,
     notesPerString,
     selectNotesPerString,
+    startingFromFret,
     // updateStringQuantity,
     // updatedivisonsPerOctave,
   };

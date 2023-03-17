@@ -1,6 +1,4 @@
-<!-- eslint-disable prettier/prettier -->
 <script setup>
-// import { reactive } from "vue";
 import { useGuitar } from "../state/guitar";
 import { useTemperament } from "../state/temperament";
 import { remPixels, isOdd, range } from "../helpers";
@@ -19,11 +17,15 @@ const {
   selectedScale,
   notesPerString,
   selectNotesPerString,
+  startingFromFret,
 } = useGuitar();
 
 const noteNames = computed(() =>
   selectedScale.value.pitchClassNumbers.map(
-    (pitchNumber) => pitchClassNames[pitchNumber % selectedScale.value.period]
+    (pitchNumber) =>
+      pitchClassNames[
+        (pitchNumber + startingFromFret.value) % selectedScale.value.period
+      ]
   )
 );
 
@@ -50,7 +52,9 @@ const fretDistancesFromNut = (fretsQuantity, scaleLength) => {
 };
 
 const startingFret = 0;
-const endingFret = Math.round(REACHABLE_FRETS_PERCENTAGE * divisonsPerOctave.value);
+const endingFret = Math.round(
+  REACHABLE_FRETS_PERCENTAGE * divisonsPerOctave.value
+);
 const fretDistances = fretDistancesFromNut(endingFret, VIEWBOX_Y_MAX * 0.67129);
 const fretSpacing = fretDistances.slice(1);
 const fretHeights = fretSpacing.reduce((distances, length, index) => {
@@ -81,32 +85,35 @@ const textOffsetY = fontSize;
 </script>
 
 <template>
-  <select name="" id="" @change="selectScale($event.target.value)">
-    <option
-      v-for="scaleName in scaleNames"
-      :key="scaleName"
-      :value="scaleName"
-      :selected="scaleName === selectedScaleName"
-    >
-      {{ scaleName }}
-    </option>
-  </select>
-  <select @change="selectNotesPerString($event.target.value)">
-    <option
-      v-for="notesPerStringSelection in ['All', 3, 4, 5]"
-      :key="notesPerStringSelection"
-      :value="notesPerStringSelection"
-      :selected="notesPerString === notesPerStringSelection"
-    >
-      {{
-        `${
-          notesPerStringSelection === -1 ? "All" : notesPerStringSelection
-        } notes per string`
-      }}
-    </option>
-  </select>
   <div>
-    <span> Intervals{{ selectedScale.intervals }}</span>
+    <select name="" id="" @change="selectScale($event.target.value)">
+      <option
+        v-for="scaleName in scaleNames"
+        :key="scaleName"
+        :value="scaleName"
+        :selected="scaleName === selectedScaleName"
+      >
+        {{ scaleName }}
+      </option>
+    </select>
+    <select @change="selectNotesPerString($event.target.value)">
+      <option
+        v-for="notesPerStringSelection in ['All', 3, 4, 5]"
+        :key="notesPerStringSelection"
+        :value="notesPerStringSelection"
+        :selected="notesPerString === notesPerStringSelection"
+      >
+        {{
+          `${
+            notesPerStringSelection === -1 ? "All" : notesPerStringSelection
+          } notes per string`
+        }}
+      </option>
+    </select>
+    <input type="number" name="" id="" v-model="startingFromFret" />
+  </div>
+  <div>
+    <span> Intervals {{ selectedScale.intervals.join(" ") }}</span>
   </div>
   <div>
     Notes
@@ -114,11 +121,10 @@ const textOffsetY = fontSize;
       v-for="(noteName, index) in noteNames.slice(0, noteNames.length - 1)"
       :key="index"
       class="note-badge"
-      :style="`color: ${hsl(index, noteNames.length - 1)}; background-color:${hsl(
+      :style="`color: ${hsl(
         index,
-        noteNames.length,
-        12
-      )};`"
+        noteNames.length - 1
+      )}; background-color:${hsl(index, noteNames.length, 12)};`"
     >
       {{ noteName }}&nbsp;</span
     >
@@ -137,7 +143,9 @@ const textOffsetY = fontSize;
         :x="x - 2 * textOffsetX"
         :y="y + height + 1.5 * textOffsetY"
         :font-size="fontSize"
-        :transform="`rotate(90 ${x - textOffsetX} ${y + height + textOffsetY + 2})`"
+        :transform="`rotate(90 ${x - textOffsetX} ${
+          y + height + textOffsetY + 2
+        })`"
         transform-origin=""
       >
         {{ endingFret }}
@@ -196,7 +204,9 @@ const textOffsetY = fontSize;
           :r="Math.min(stringSpacing / 5, fretHeights[fret] * 0.333)"
           :fill="
             hslForNote(
-              frettedNotes[`string${string}`].find((note) => note.fretNumber === fret)
+              frettedNotes[`string${string}`].find(
+                (note) => note.fretNumber === fret
+              )
             )
           "
           stroke-width="4"
