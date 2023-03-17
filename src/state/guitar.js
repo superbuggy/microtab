@@ -50,6 +50,24 @@ export function useGuitar() {
           startingNoteNameIndex,
       }));
   };
+  // const scaleForGuitar = (startingNoteNameIndex, endingNoteNameIndex) => {
+  //   return selectedScale.value.notes
+  //     .filter(
+  //       (note) =>
+  //         startingNoteNameIndex + noteNames.indexOf(lowestNote) <=
+  //           note.absolutePitchNumber &&
+  //         note.absolutePitchNumber <=
+  //           endingNoteNameIndex + noteNames.indexOf(lowestNote)
+  //     )
+  //     .reduce((stringNotes, note) => {
+  //       const fretNumber =
+  //         note.absolutePitchNumber -
+  //         noteNames.indexOf(lowestNote) -
+  //         startingNoteNameIndex;
+  //       stringNotes[fretNumber] = note;
+  //       return stringNotes;
+  //     }, {});
+  // };
 
   const selectNotesPerString = (perString) => {
     notesPerString.value = perString === "All" ? null : Number(perString);
@@ -95,7 +113,7 @@ export function useGuitar() {
     return guitar;
   });
 
-  const frettedNotes = computed(() => fretboardScale.value);
+  const scaleNotesOnStrings = computed(() => fretboardScale.value);
 
   selectScale(selectedScaleName.value);
 
@@ -104,7 +122,7 @@ export function useGuitar() {
     divisonsPerOctave,
     tuning,
     stringNumbers,
-    frettedNotes,
+    scaleNotesOnStrings,
     scaleNames,
     selectScale,
     selectedScaleName,
