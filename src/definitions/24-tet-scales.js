@@ -1,4 +1,4 @@
-import { scalarIntervallicDistances } from "./scalar-intervals";
+import { scalarIntervallicDistances } from "./24-tet-scalar-intervals";
 import { useTemperament } from "../state/temperament";
 import { sum } from "../helpers";
 

@@ -7,7 +7,7 @@ import { useChords } from "../state/chord";
 
 const { updateChord } = useChords();
 
-const { stringQuantity, divisonsPerOctave, stringNumbers } = useGuitar();
+const { stringQuantity, divisionsPerOctave, stringNumbers } = useGuitar();
 const props = defineProps({
   // id: String,
   chord: Object,
@@ -38,7 +38,7 @@ watch(isInEditMode, async () => {
 });
 
 const startingFret = ref(lowestChordNote());
-const fretSpan = Math.round(REACHABLE_FRETS_PERCENTAGE * divisonsPerOctave.value);
+const fretSpan = Math.round(REACHABLE_FRETS_PERCENTAGE * divisionsPerOctave.value);
 const endingFret = computed(() => startingFret.value + fretSpan);
 const reachableFrets = computed(() => range(startingFret.value, endingFret.value));
 const fretDots = computed(() =>

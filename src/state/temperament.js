@@ -1,3 +1,4 @@
+import { computed, ref } from "vue";
 import { Temperament } from "temperament";
 
 const tet24schema = {
@@ -33,6 +34,38 @@ const tet24schema = {
     "A#‡": ["A#", 50],
     B: ["A#‡", 50],
     "B‡": ["B", 50],
+  },
+};
+const tet16schema = {
+  name: "16 TET",
+  description: "Standard 16-tone equal temperament.",
+  source: "https://en.xen.wiki/w/16edo",
+  referenceName: "A",
+  referencePitch: 440,
+  referenceOctave: 4,
+  octaveBaseName: "C",
+  notes: {
+    D: ["D", 0],
+    "D#": ["D", 75],
+    Eb: ["D", 75],
+    E: ["D", 150],
+    "E#": ["D#", 225],
+    Fb: ["D", 300],
+    F: ["D", 375],
+    "F#": ["D", 450],
+    Gb: ["D", 450],
+    G: ["D", 525],
+    "G#": ["D", 600],
+    Ab: ["D", 600],
+    A: ["D", 675],
+    "A#": ["D", 750],
+    Bb: ["D", 750],
+    B: ["D", 825],
+    "B#": ["D#", 900],
+    Cb: ["D", 975],
+    C: ["D", 1050],
+    "C#": ["D", 1125],
+    Db: ["D", 1125],
   },
 };
 
@@ -119,27 +152,58 @@ function noteInTET(temperament) {
   };
 }
 
+const tet24 = new TET(tet24schema);
+const tet16 = new TET(tet16schema);
+
+const temperaments = [tet16, tet24];
+const temperamentNames = temperaments.map(({ name }) => name);
+const chosenTemperamentName = ref(temperamentNames[1]);
+const chosenTemperament = computed(() =>
+  temperaments.find(({ name }) => name === chosenTemperamentName.value)
+);
+
 export function useTemperament() {
-  const tet24 = new TET(tet24schema);
-  const Note = noteInTET(tet24);
+  const Note = noteInTET(chosenTemperament.value);
+
+  const chooseTemperament = (temperamentName) => {
+    chosenTemperamentName.value = temperamentName;
+    console.log(chosenTemperament.value, temperamentName);
+  };
 
   const noteFromStepsAbove = (referenceNoteName, stepsAbove) =>
-    tet24.noteFromStepsAbove(referenceNoteName, stepsAbove);
+    chosenTemperament.value.noteFromStepsAbove(referenceNoteName, stepsAbove);
+
   const distanceBetweenNotes = (lowerNote, higherNote) =>
-    tet24.distanceBetweenNotes(lowerNote, higherNote);
-  const noteNames = tet24.pitchNames;
-  const pitchClassNames = tet24.pitchClassNames;
-  const notes = tet24.pitchNames.map((pitchName) => new Note(pitchName));
-  window.tet24 = tet24;
+    chosenTemperament.value.distanceBetweenNotes(lowerNote, higherNote);
+
+  const noteNames = chosenTemperament.value.pitchNames;
+  const pitchClassNames = chosenTemperament.value.pitchClassNames;
+  
+  const notes = chosenTemperament.value.pitchNames.map(
+    (pitchName) => new Note(pitchName)
+  );
+
+  // For debugging purposes
+  window.chosenTemperament = chosenTemperament.value;
   window.Note = Note;
+  const OCTAVE_DIVISONS = {
+    "16 TET": 16,
+    "24 TET": 24,
+  }[chosenTemperamentName.value];
+
+  const divisionsPerOctave = ref(OCTAVE_DIVISONS);
 
   return {
-    tet24,
     noteNames,
     notes,
     Note,
     noteFromStepsAbove,
     distanceBetweenNotes,
-    pitchClassNames
+    pitchClassNames,
+    chosenTemperamentName,
+    chosenTemperament,
+    divisionsPerOctave,
+    chooseTemperament,
+    temperamentNames,
   };
 }

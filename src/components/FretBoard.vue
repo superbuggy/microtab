@@ -5,11 +5,10 @@ import { remPixels, isOdd, range } from "../helpers";
 import { computed } from "vue";
 import * as Tone from "tone";
 
-const { pitchClassNames } = useTemperament();
+const { pitchClassNames, divisionsPerOctave } = useTemperament();
 
 const {
   stringQuantity,
-  divisonsPerOctave,
   stringNumbers,
   scaleNotesOnStrings,
   scaleNames,
@@ -24,9 +23,7 @@ const {
 const noteNames = computed(() =>
   selectedScale.value.pitchClassNumbers.map(
     (pitchNumber) =>
-      pitchClassNames[
-        (pitchNumber + startingFromFret.value) % selectedScale.value.period
-      ]
+      pitchClassNames[(pitchNumber + startingFromFret.value) % selectedScale.value.period]
   )
 );
 
@@ -43,7 +40,8 @@ const height = VIEWBOX_Y_MAX / 2;
 
 const fretDistancesFromNut = (fretsQuantity, scaleLength) => {
   // Note: 35.124 or 17.562 * 2 (for 24) is closer for 24 EDO
-  const FRET_DISTANCE_DIVISOR = 17.817 * (divisonsPerOctave.value / 12);
+  // 17.817 Is the number which makes it line up
+  const FRET_DISTANCE_DIVISOR = 17.817 * (divisionsPerOctave.value / 12);
   return Array.from({ length: fretsQuantity }).reduce(
     (lengths, _, index) => {
       lengths.push(
@@ -56,9 +54,7 @@ const fretDistancesFromNut = (fretsQuantity, scaleLength) => {
 };
 
 const startingFret = 0;
-const endingFret = Math.round(
-  REACHABLE_FRETS_PERCENTAGE * divisonsPerOctave.value
-);
+const endingFret = Math.round(REACHABLE_FRETS_PERCENTAGE * divisionsPerOctave.value);
 const fretDistances = fretDistancesFromNut(endingFret, VIEWBOX_Y_MAX * 0.67129);
 const fretSpacing = fretDistances.slice(1);
 const fretHeights = fretSpacing.reduce((distances, length, index) => {
@@ -156,10 +152,11 @@ function playScale() {
       v-for="(noteName, index) in noteNames.slice(0, noteNames.length - 1)"
       :key="index"
       class="note-badge"
-      :style="`color: ${hsl(
+      :style="`color: ${hsl(index, noteNames.length - 1)}; background-color:${hsl(
         index,
-        noteNames.length - 1
-      )}; background-color:${hsl(index, noteNames.length, 12)};`"
+        noteNames.length,
+        12
+      )};`"
     >
       {{ noteName }}&nbsp;</span
     >
@@ -178,9 +175,7 @@ function playScale() {
         :x="x - 2 * textOffsetX"
         :y="y + height + 1.5 * textOffsetY"
         :font-size="fontSize"
-        :transform="`rotate(90 ${x - textOffsetX} ${
-          y + height + textOffsetY + 2
-        })`"
+        :transform="`rotate(90 ${x - textOffsetX} ${y + height + textOffsetY + 2})`"
         transform-origin=""
       >
         {{ endingFret }}
