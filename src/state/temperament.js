@@ -167,7 +167,6 @@ export function useTemperament() {
 
   const chooseTemperament = (temperamentName) => {
     chosenTemperamentName.value = temperamentName;
-    console.log(chosenTemperament.value, temperamentName);
   };
 
   const noteFromStepsAbove = (referenceNoteName, stepsAbove) =>
@@ -178,7 +177,7 @@ export function useTemperament() {
 
   const noteNames = chosenTemperament.value.pitchNames;
   const pitchClassNames = chosenTemperament.value.pitchClassNames;
-  
+
   const notes = chosenTemperament.value.pitchNames.map(
     (pitchName) => new Note(pitchName)
   );
@@ -186,12 +185,14 @@ export function useTemperament() {
   // For debugging purposes
   window.chosenTemperament = chosenTemperament.value;
   window.Note = Note;
-  const OCTAVE_DIVISONS = {
-    "16 TET": 16,
-    "24 TET": 24,
-  }[chosenTemperamentName.value];
 
-  const divisionsPerOctave = ref(OCTAVE_DIVISONS);
+  const divisionsPerOctave = computed(
+    () =>
+      ({
+        "16 TET": 16,
+        "24 TET": 24,
+      }[chosenTemperamentName.value])
+  );
 
   return {
     noteNames,

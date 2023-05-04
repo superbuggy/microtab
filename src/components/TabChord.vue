@@ -2,12 +2,14 @@
 import { range } from "../helpers";
 import { reactive, ref, computed, watch, nextTick } from "vue";
 import { useGuitar } from "../state/guitar";
-import { remPixels, isEven } from "../helpers";
+import { useTemperament } from "../state/temperament";
 import { useChords } from "../state/chord";
+import { remPixels, isEven } from "../helpers";
 
 const { updateChord } = useChords();
 
-const { stringQuantity, divisionsPerOctave, stringNumbers } = useGuitar();
+const { stringQuantity, stringNumbers } = useGuitar();
+const { divisionsPerOctave } = useTemperament();
 const props = defineProps({
   // id: String,
   chord: Object,

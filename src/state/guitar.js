@@ -1,8 +1,10 @@
-import { ref, computed } from "vue";
-import { scaleNames, scalesFor } from "../definitions/24-tet-scales";
+import { watch, ref, computed } from "vue";
+import { useScales } from "../definitions/scales";
 import { useTemperament } from "./temperament";
 
-const { distanceBetweenNotes, noteNames, divisionsPerOctave } = useTemperament();
+const { scaleNames, scalesFor } = useScales();
+const { distanceBetweenNotes, noteNames, divisionsPerOctave } =
+  useTemperament();
 
 const DEFAULT_STRING_QUANTITY = 6;
 const TUNING = ["B1", "E2", "A2", "D3", "F#3", "B3"];
@@ -20,9 +22,14 @@ const tuning = ref(
 );
 const startingFromFret = ref(0);
 const lowestNote = tuning.value[`string${stringNumbers[0]}`];
-const scales = scalesFor(lowestNote.replace(/\d/, ""));
+const scales = computed(() => scalesFor.value(lowestNote.replace(/\d/, "")));
 const selectedScaleName = ref("Ionian");
-const selectedScale = computed(() => scales[selectedScaleName.value]);
+
+const selectedScale = computed(() => scales.value[selectedScaleName.value]);
+watch(divisionsPerOctave, (perOctave) => {
+  selectedScaleName.value = perOctave === 24 ? "Ionian" : "Rank 3 Minor [7] A";
+  console.log(perOctave, scales, selectedScale);
+});
 const notesPerString = ref(3);
 
 export function useGuitar() {

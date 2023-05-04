@@ -1,4 +1,4 @@
-export const scalarIntervallicDistances = {
+export const scalarIntervallicDistances16EDO = {
   "Rank 3 Minor [7] A": [3, 1, 3, 2, 1, 3, 3],
   "Anti-Marvel [7]": [3, 1, 3, 2, 3, 1, 3],
   Subminor: [2, 1, 3, 3, 1, 3, 3],

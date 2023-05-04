@@ -1,4 +1,4 @@
-export const scalarIntervallicDistances = {
+export const scalarIntervallicDistances24EDO = {
   semaphore5: [5, 5, 4, 5, 5],
   semaphore9: [4, 1, 4, 1, 4, 4, 1, 4, 1],
   maqamic7: [3, 4, 3, 3, 4, 3, 4],
@@ -151,10 +151,10 @@ const overTonePrimes = [0, 386, 702, 969, 551, 840, 105, 297, 1200].sort(
   (a, b) => a - b
 ); // octave reduced
 
-scalarIntervallicDistances["Bohlen-Pierce 24 EDO Approximation"] =
+scalarIntervallicDistances24EDO["Bohlen-Pierce 24 EDO Approximation"] =
   intervallicDistances(centsToEDO(approxBohlenPierceCents, 24));
-scalarIntervallicDistances["Bohlen-Pierce 24 EDO (Neutral 7th)"] =
+scalarIntervallicDistances24EDO["Bohlen-Pierce 24 EDO (Neutral 7th)"] =
   intervallicDistances(centsToEDO(modifiedBohlenPierceCents, 24));
-scalarIntervallicDistances["Prime Overtone 24 EDO"] = intervallicDistances(
+scalarIntervallicDistances24EDO["Prime Overtone 24 EDO"] = intervallicDistances(
   centsToEDO(overTonePrimes, 24)
 );

@@ -1,4 +1,4 @@
-import { scalarIntervallicDistances } from "./24-tet-scalar-intervals";
+import { scalarIntervallicDistances24EDO } from "./24-tet-scalar-intervals";
 import { useTemperament } from "../state/temperament";
 import { sum } from "../helpers";
 
@@ -15,20 +15,22 @@ const pitchClassNumbersFromIntervallicDistances = (intervals, rootNoteName) =>
 
 export const scalesFor = (rootNoteName) =>
   Object.fromEntries(
-    Object.entries(scalarIntervallicDistances).map(([scaleName, intervals]) => [
-      scaleName,
-      {
-        notes: Array.from(scale(intervals, rootNoteName)),
-        period: sum(intervals),
-        intervals,
-        degrees: intervals.length,
-        rootNoteName,
-        pitchClassNumbers: pitchClassNumbersFromIntervallicDistances(
+    Object.entries(scalarIntervallicDistances24EDO).map(
+      ([scaleName, intervals]) => [
+        scaleName,
+        {
+          notes: Array.from(scale(intervals, rootNoteName)),
+          period: sum(intervals),
           intervals,
-          rootNoteName
-        ),
-      },
-    ])
+          degrees: intervals.length,
+          rootNoteName,
+          pitchClassNumbers: pitchClassNumbersFromIntervallicDistances(
+            intervals,
+            rootNoteName
+          ),
+        },
+      ]
+    )
   );
 
 // TODO: This may leave out notes below the rootNote on the list of absolute pitches
@@ -45,5 +47,4 @@ export function* scale(intervals, rootNoteName) {
   }
 }
 
-export const scaleNames = Object.keys(scalarIntervallicDistances);
-
+export const scaleNames = Object.keys(scalarIntervallicDistances24EDO);
