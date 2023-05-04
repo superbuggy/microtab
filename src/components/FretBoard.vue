@@ -23,13 +23,13 @@ const {
 const noteNames = computed(() =>
   selectedScale.value.pitchClassNumbers.map(
     (pitchNumber) =>
-      pitchClassNames[(pitchNumber + startingFromFret.value) % selectedScale.value.period]
+      pitchClassNames.value[(pitchNumber + startingFromFret.value) % selectedScale.value.period]
   )
 );
 
 const VIEWBOX_X_MAX = 600;
 const VIEWBOX_Y_MAX = 4000;
-const REACHABLE_FRETS_PERCENTAGE = 24 / 12;
+// const REACHABLE_FRETS_PERCENTAGE = 24 / 12;
 const x = VIEWBOX_X_MAX / 4;
 const y = VIEWBOX_Y_MAX / 8;
 const width = VIEWBOX_X_MAX / 2;
@@ -54,17 +54,33 @@ const fretDistancesFromNut = (fretsQuantity, scaleLength) => {
 };
 
 const startingFret = 0;
-const endingFret = Math.round(REACHABLE_FRETS_PERCENTAGE * divisionsPerOctave.value);
-const fretDistances = fretDistancesFromNut(endingFret, VIEWBOX_Y_MAX * 0.67129);
-const fretSpacing = fretDistances.slice(1);
-const fretHeights = fretSpacing.reduce((distances, length, index) => {
-  distances.push(length - fretDistances[index]);
-  return distances;
-}, []);
-const reachableFrets = range(startingFret, endingFret);
-const fretDots = [3, 5, 7, 9, 12, 15, 17, 19, 21, 24]
-  .map((i) => i * 2 - 1)
-  .filter((fret) => fret > startingFret && fret < endingFret);
+const endingFret = computed(() => Math.round(2 * divisionsPerOctave.value));
+const fretDistances = computed(() =>
+  fretDistancesFromNut(endingFret.value, VIEWBOX_Y_MAX * 0.67129)
+);
+const fretSpacing = computed(() => fretDistances.value.slice(1));
+const fretHeights = computed(() =>
+  fretSpacing.value.reduce((distances, length, index) => {
+    distances.push(length - fretDistances.value[index]);
+    return distances;
+  }, [])
+);
+const reachableFrets = computed(() => range(startingFret, endingFret.value));
+const fretDots = computed(
+  () =>
+    ({
+      16: [3, 5, 7, 9, 11, 13, 16, 19, 21, 23, 25, 27, 29, 32],
+      24: [5, 9, 13, 17, 23, 29, 33, 37, 41, 47],
+    }[divisionsPerOctave.value])
+);
+const fretDotModifier = computed(
+  () =>
+    ({
+      16: 0,
+      24: 1,
+    }[divisionsPerOctave.value])
+);
+// .filter((fret) => fret > startingFret && fret < endingFret);
 
 const hue = (degree, upperBound) => (360 * degree) / upperBound;
 const hsl = (degree, upperBound, l = 75) =>
@@ -184,7 +200,7 @@ function playScale() {
 
       <g v-for="fret in reachableFrets" :key="fret">
         <rect
-          v-if="isOdd(fret + 1)"
+          v-if="divisionsPerOctave === 24 && isOdd(fret + 1)"
           :key="fret"
           :x="x"
           :y="fretDistances[fret] + y"
@@ -211,17 +227,29 @@ function playScale() {
       />
       <g v-for="fretDot in fretDots" :key="fretDot">
         <circle
-          :cx="(fretDot + 1) % 12 === 0 ? width * 0.8 : width"
+          :cx="
+            (fretDot + fretDotModifier) % divisionsPerOctave === 0 ? width * 0.8 : width
+          "
           :cy="fretSpacing[fretDot - 1] + y"
-          :r="Math.min(stringSpacing / 3, fretHeights[fretDot] * 0.666)"
+          :r="
+            Math.min(
+              stringSpacing / 3,
+              (fretHeights[fretDot] || fretHeights[fretDot - 1]) * 0.666
+            )
+          "
           class="fret-dot"
         />
         <circle
-          v-if="(fretDot + 1) % 12 === 0"
+          v-if="(fretDot + fretDotModifier) % divisionsPerOctave === 0"
           :cx="width * 1.2"
           :cy="fretSpacing[fretDot - 1] + y"
-          :r="Math.min(stringSpacing / 3, fretHeights[fretDot] * 0.666)"
-          class="fret-dot"
+          :r="
+            Math.min(
+              stringSpacing / 3,
+              (fretHeights[fretDot] || fretHeights[fretDot - 1]) * 0.666
+            )
+          "
+          class="fret-dot octave-dots"
         />
       </g>
       <g v-for="fret in reachableFrets" :key="fret">

@@ -50,12 +50,12 @@ export function useScales() {
 
 // TODO: This may leave out notes below the rootNote on the list of absolute pitches
 function* scale(intervals, rootNoteName) {
-  const startingNoteNameIndex = pitchClassNames.indexOf(rootNoteName);
+  const startingNoteNameIndex = pitchClassNames.value.indexOf(rootNoteName);
   const endingNoteNameIndex = notes.length - 1;
   let pitchCount = 0;
   let noteNameIndex = startingNoteNameIndex;
   while (pitchCount + startingNoteNameIndex <= endingNoteNameIndex) {
-    if (!noteNames[noteNameIndex]) break;
+    if (!noteNames.value[noteNameIndex]) break;
     yield notes[noteNameIndex];
     noteNameIndex += intervals[pitchCount % intervals.length];
     ++pitchCount;
@@ -68,6 +68,6 @@ function pitchClassNumbersFromIntervallicDistances(intervals, rootNoteName) {
       builtScale.push(intervallicDistance + builtScale.at(-1));
       return builtScale;
     },
-    [rootNoteName ? pitchClassNames.indexOf(rootNoteName) : 0]
+    [rootNoteName ? pitchClassNames.value.indexOf(rootNoteName) : 0]
   );
 }

@@ -175,8 +175,10 @@ export function useTemperament() {
   const distanceBetweenNotes = (lowerNote, higherNote) =>
     chosenTemperament.value.distanceBetweenNotes(lowerNote, higherNote);
 
-  const noteNames = chosenTemperament.value.pitchNames;
-  const pitchClassNames = chosenTemperament.value.pitchClassNames;
+  const noteNames = computed(() => chosenTemperament.value.pitchNames);
+  const pitchClassNames = computed(
+    () => chosenTemperament.value.pitchClassNames
+  );
 
   const notes = chosenTemperament.value.pitchNames.map(
     (pitchName) => new Note(pitchName)

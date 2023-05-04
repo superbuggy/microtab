@@ -42,16 +42,16 @@ export function useGuitar() {
     return selectedScale.value.notes
       .filter(
         (note) =>
-          startingNoteNameIndex + noteNames.indexOf(lowestNote) <=
+          startingNoteNameIndex + noteNames.value.indexOf(lowestNote) <=
             note.absolutePitchNumber &&
           note.absolutePitchNumber <=
-            endingNoteNameIndex + noteNames.indexOf(lowestNote)
+            endingNoteNameIndex + noteNames.value.indexOf(lowestNote)
       )
       .map((note) => ({
         note,
         fretNumber:
           note.absolutePitchNumber -
-          noteNames.indexOf(lowestNote) -
+          noteNames.value.indexOf(lowestNote) -
           startingNoteNameIndex,
       }));
   };
@@ -59,15 +59,15 @@ export function useGuitar() {
   //   return selectedScale.value.notes
   //     .filter(
   //       (note) =>
-  //         startingNoteNameIndex + noteNames.indexOf(lowestNote) <=
+  //         startingNoteNameIndex + noteNames.value.indexOf(lowestNote) <=
   //           note.absolutePitchNumber &&
   //         note.absolutePitchNumber <=
-  //           endingNoteNameIndex + noteNames.indexOf(lowestNote)
+  //           endingNoteNameIndex + noteNames.value.indexOf(lowestNote)
   //     )
   //     .reduce((stringNotes, note) => {
   //       const fretNumber =
   //         note.absolutePitchNumber -
-  //         noteNames.indexOf(lowestNote) -
+  //         noteNames.value.indexOf(lowestNote) -
   //         startingNoteNameIndex;
   //       stringNotes[fretNumber] = note;
   //       return stringNotes;
@@ -135,7 +135,5 @@ export function useGuitar() {
     notesPerString,
     selectNotesPerString,
     startingFromFret,
-    // updateStringQuantity,
-    // updatedivisionsPerOctave,
   };
 }
