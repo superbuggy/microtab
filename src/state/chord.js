@@ -52,7 +52,7 @@ export function useChords() {
     console.log(notesInChord);
     return notesInChord.map(
       (note) =>
-        notes.find((noteToMatch) => note === noteToMatch.pitch).frequency
+        notes.value.find((noteToMatch) => note === noteToMatch.pitch).frequency
     );
   }
 

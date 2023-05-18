@@ -22,14 +22,27 @@ const tuning = ref(
 );
 const startingFromFret = ref(0);
 const lowestNote = tuning.value[`string${stringNumbers[0]}`];
-const scales = computed(() => scalesFor.value(lowestNote.replace(/\d/, "")));
+const scales = ref(scalesFor(lowestNote.replace(/\d/, "")));
 const selectedScaleName = ref("Ionian");
 
-const selectedScale = computed(() => scales.value[selectedScaleName.value]);
-watch(divisionsPerOctave, (perOctave) => {
-  selectedScaleName.value = perOctave === 24 ? "Ionian" : "Rank 3 Minor [7] A";
-  console.log(perOctave, scales, selectedScale);
+const selectedScale = computed(() => {
+  console.log(scales.value, selectedScaleName.value);
+  return scales.value[selectedScaleName.value];
 });
+
+const defaultScalesPerTet = {
+  16: "Rank 3 Minor [7] A",
+  17: "Otonal 17",
+  24: "Ionian",
+};
+
+watch(divisionsPerOctave, (perOctave) => {
+  selectedScaleName.value = defaultScalesPerTet[perOctave];
+  scales.value = scalesFor(lowestNote.replace(/\d/, ""));
+
+  console.log(scales.value);
+});
+
 const notesPerString = ref(3);
 
 export function useGuitar() {

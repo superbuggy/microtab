@@ -2,7 +2,7 @@
 import { useGuitar } from "../state/guitar";
 import { useTemperament } from "../state/temperament";
 import { remPixels, isOdd, range } from "../helpers";
-import { computed } from "vue";
+import { computed, onUpdated } from "vue";
 import * as Tone from "tone";
 
 const { pitchClassNames, divisionsPerOctave } = useTemperament();
@@ -23,7 +23,9 @@ const {
 const noteNames = computed(() =>
   selectedScale.value.pitchClassNumbers.map(
     (pitchNumber) =>
-      pitchClassNames.value[(pitchNumber + startingFromFret.value) % selectedScale.value.period]
+      pitchClassNames.value[
+        (pitchNumber + startingFromFret.value) % selectedScale.value.period
+      ]
   )
 );
 
@@ -91,6 +93,7 @@ const hslForNote = (note, l = 50) => {
   const degree = selectedScale.value.pitchClassNumbers
     .map((pitchClassNumber) => pitchClassNumber % selectedScale.value.period)
     .indexOf(note.note.pitchClassNumber);
+
   return hsl(degree, selectedScale.value.degrees, l);
 };
 
@@ -98,7 +101,10 @@ const stringSpacing = width / (stringQuantity.value - 1);
 const fontSize = remPixels() * 2.5;
 const textOffsetX = 0.5 * fontSize;
 const textOffsetY = fontSize;
-
+onUpdated(() => {
+  console.log('selectedScale.value');
+  console.log(selectedScale.value);
+});
 function playScale() {
   Tone.start();
   const bps = 8;
@@ -121,10 +127,8 @@ function playScale() {
   ];
   const synth = new Tone.PolySynth().toDestination();
   const part = new Tone.Part((time, { note }) => {
-    console.log(note);
     synth.triggerAttackRelease(note, 0.25, time);
   }, notesToPlay);
-  console.log(part);
   part.start();
   Tone.Transport.start();
 }
