@@ -363,13 +363,16 @@ function playScale() {
 <style scoped>
 svg {
   /* width: 800px; */
-  width: 200px;
+  width: 400px;
   /* height: 200px; */
-  transform: rotate(270deg) translate(575px, 425px);
+  transform: rotate(270deg) translate(1125px, 825px);
 }
 
 div.svg-container {
-  max-height: 200px;
+  max-height: 350px;
+}
+svg {
+  overflow: hidden;
 }
 
 label[for="tempo"] span {
