@@ -1,11 +1,17 @@
 <script setup>
 import { useGuitar } from "../state/guitar";
+import { useTone } from "../effects/tone";
 import { useTemperament } from "../state/temperament";
 import { remPixels, isOdd, range } from "../helpers";
-import { computed, onUpdated } from "vue";
-import * as Tone from "tone";
+import { computed, ref, onUpdated } from "vue";
+// import * as Tone from "tone";
+
+// const tempo = ref(120);
 
 const { pitchClassNames, divisionsPerOctave } = useTemperament();
+const { Tone, changeTempo, tempo, playNoteSequence, isLooped, bps } = useTone();
+
+const shouldShow12TETFrets = ref(false);
 
 const {
   stringQuantity,
@@ -40,10 +46,14 @@ const height = VIEWBOX_Y_MAX / 2;
 // const
 // const frettedNotes =Object.entries(scaleNotesOnStrings.value)
 
-const fretDistancesFromNut = (fretsQuantity, scaleLength) => {
+const fretDistancesFromNut = (
+  fretsQuantity,
+  scaleLength,
+  divisions = divisionsPerOctave.value
+) => {
   // Note: 35.124 or 17.562 * 2 (for 24) is closer for 24 EDO
   // 17.817 Is the number which makes it line up
-  const FRET_DISTANCE_DIVISOR = 17.817 * (divisionsPerOctave.value / 12);
+  const FRET_DISTANCE_DIVISOR = 17.817 * (divisions / 12);
   return Array.from({ length: fretsQuantity }).reduce(
     (lengths, _, index) => {
       lengths.push(
@@ -68,10 +78,19 @@ const fretHeights = computed(() =>
   }, [])
 );
 const reachableFrets = computed(() => range(startingFret, endingFret.value));
+const tet12 = {
+  reachableFrets: range(0, 24),
+  fretDistances: fretDistancesFromNut(24, VIEWBOX_Y_MAX * 0.67129, 12),
+  fretSpacing: fretDistancesFromNut(24, VIEWBOX_Y_MAX * 0.67129, 12).slice(1),
+};
+
+// console.log(tet12);
+
 const fretDots = computed(
   () =>
     ({
       16: [3, 5, 7, 9, 11, 13, 16, 19, 21, 23, 25, 27, 29, 32],
+      17: [4, 7, 10, 13, 17, 21, 24, 27, 30, 34],
       24: [5, 9, 13, 17, 23, 29, 33, 37, 41, 47],
     }[divisionsPerOctave.value])
 );
@@ -79,6 +98,7 @@ const fretDotModifier = computed(
   () =>
     ({
       16: 0,
+      17: 0,
       24: 1,
     }[divisionsPerOctave.value])
 );
@@ -101,18 +121,12 @@ const stringSpacing = width / (stringQuantity.value - 1);
 const fontSize = remPixels() * 2.5;
 const textOffsetX = 0.5 * fontSize;
 const textOffsetY = fontSize;
-onUpdated(() => {
-  console.log('selectedScale.value');
-  console.log(selectedScale.value);
-});
-function playScale() {
-  Tone.start();
-  const bps = 8;
 
+function playScale() {
   const ascendingScale = Object.values(scaleNotesOnStrings.value)
     .flat()
     .map(({ note }, index) => ({
-      time: index / bps,
+      time: index / bps.value,
       note: [note.frequency * 2],
     }));
   const notesToPlay = [
@@ -121,22 +135,18 @@ function playScale() {
       .slice()
       .reverse()
       .map(({ note }, index) => ({
-        time: ascendingScale.length / bps + index / bps,
+        time: (ascendingScale.length + index) / bps.value,
         note,
       })),
   ];
-  const synth = new Tone.PolySynth().toDestination();
-  const part = new Tone.Part((time, { note }) => {
-    synth.triggerAttackRelease(note, 0.25, time);
-  }, notesToPlay);
-  part.start();
-  Tone.Transport.start();
+
+  playNoteSequence(notesToPlay);
 }
 </script>
 
 <template>
-  <div>
-    <select name="" id="" @change="selectScale($event.target.value)">
+  <div class="controls">
+    <select name="" id="" @input="selectScale($event.target.value)">
       <option
         v-for="scaleName in scaleNames"
         :key="scaleName"
@@ -162,6 +172,18 @@ function playScale() {
     </select>
     <input type="number" name="" id="" v-model="startingFromFret" />
     <button @click="playScale">Play Scale</button>
+    <label for="tempo">
+      <span>{{ tempo }}</span> BPM
+      <input type="range" min="30" max="180" :value="tempo" @input="changeTempo" />
+    </label>
+    <label for="loop">
+      Loop?
+      <input type="checkbox" v-model="isLooped" />
+    </label>
+    <label for="">
+      12Tet?
+      <input type="checkbox" v-model="shouldShow12TETFrets" />
+    </label>
   </div>
   <div>
     <span> Intervals {{ selectedScale.intervals.join(" ") }}</span>
@@ -182,7 +204,10 @@ function playScale() {
     >
   </div>
   <div class="svg-container">
-    <svg :viewBox="`0 0 ${VIEWBOX_X_MAX} ${VIEWBOX_Y_MAX}`">
+    <svg
+      :viewBox="`0 0 ${VIEWBOX_X_MAX} ${VIEWBOX_Y_MAX}`"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <text
         :x="x + 0.5 * textOffsetX"
         :y="y + textOffsetY"
@@ -281,6 +306,56 @@ function playScale() {
           <title>{{ fret }}</title>
         </circle>
       </g>
+      <g v-if="shouldShow12TETFrets">
+        <line
+          v-for="fret in tet12.reachableFrets"
+          class="tet-12-overlay"
+          :key="fret"
+          :x1="x - width * 0.25"
+          :y1="tet12.fretSpacing[fret] + y"
+          :x2="x"
+          :y2="tet12.fretSpacing[fret] + y"
+          stroke-width="2"
+        />
+        <line
+          v-for="fret in tet12.reachableFrets"
+          class="tet-12-overlay"
+          :key="fret"
+          :x1="x - width * 0.25"
+          :y1="tet12.fretSpacing[fret] + y"
+          :x2="x + width"
+          :y2="tet12.fretSpacing[fret] + y"
+          stroke-width="2"
+        />
+
+        <!-- <g v-for="fretDot in fretDots" :key="fretDot">
+          <circle
+            :cx="
+              (fretDot + fretDotModifier) % divisionsPerOctave === 0 ? width * 0.8 : width
+            "
+            :cy="fretSpacing[fretDot - 1] + y"
+            :r="
+              Math.min(
+                stringSpacing / 3,
+                (fretHeights[fretDot] || fretHeights[fretDot - 1]) * 0.666
+              )
+            "
+            class="fret-dot"
+          />
+          <circle
+            v-if="(fretDot + fretDotModifier) % divisionsPerOctave === 0"
+            :cx="width * 1.2"
+            :cy="fretSpacing[fretDot - 1] + y"
+            :r="
+              Math.min(
+                stringSpacing / 3,
+                (fretHeights[fretDot] || fretHeights[fretDot - 1]) * 0.666
+              )
+            "
+            class="fret-dot octave-dots"
+          />
+        </g> -->
+      </g>
     </svg>
   </div>
 </template>
@@ -297,6 +372,12 @@ div.svg-container {
   max-height: 200px;
 }
 
+label[for="tempo"] span {
+  display: inline-block;
+  min-width: 1.5rem;
+  text-align: right;
+}
+
 .note-badge {
   display: inline-block;
   border-radius: 0.375rem;
@@ -311,12 +392,12 @@ svg text {
   text-anchor: end;
 }
 
-line {
+/* g:not(.overlay) */
+line:not(.tet-12-overlay) {
   stroke: #000;
 }
-
-rect {
-  /* stroke: #000; */
+line.tet-12-overlay {
+  stroke: #ff00003d;
 }
 
 rect.tab {
