@@ -3,6 +3,16 @@ export const addKey = (object, key, value = null) => {
   return object;
 };
 
+export const mapValueToRange = (
+  valueInFromRange,
+  fromMin,
+  fromMax,
+  toMin,
+  toMax
+) =>
+  toMin +
+  ((valueInFromRange - fromMin) * (toMax - toMin)) / (fromMax - fromMin);
+
 export const sum = (numbers) => numbers.reduce((sum, number) => sum + number);
 
 export const remPixels = () =>

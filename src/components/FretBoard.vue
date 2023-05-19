@@ -2,8 +2,9 @@
 import { useGuitar } from "../state/guitar";
 import { useTone } from "../effects/tone";
 import { useTemperament } from "../state/temperament";
-import { remPixels, isOdd, range } from "../helpers";
+import { remPixels, isOdd, range, mapValueToRange } from "../helpers";
 import { computed, ref, onUpdated } from "vue";
+
 // import * as Tone from "tone";
 
 // const tempo = ref(120);
@@ -53,7 +54,25 @@ const fretDistancesFromNut = (
 ) => {
   // Note: 35.124 or 17.562 * 2 (for 24) is closer for 24 EDO
   // 17.817 Is the number which makes it line up
-  const FRET_DISTANCE_DIVISOR = 17.817 * (divisions / 12);
+  const exponent = mapValueToRange(divisions, 16, 24, -3, -1.5);
+
+  const FRET_DISTANCE_DIVISOR =
+    (17.817 - Math.log(divisions / 12) * (divisions / 12) ** exponent) * (divisions / 12);
+  // const FRET_DISTANCE_DIVISOR = 17.817 * (divisions / 12);
+  // const FRET_DISTANCE_DIVISOR = mapValueToRange(divisions,12, 24, 17.817, 17.817*2)
+  // const multiplier = Math.log(divisions, 12);
+  // const FRET_DISTANCE_DIVISOR =
+  //   mapValueToRange(
+  //     divisions,
+  //     12,
+  //     24,
+  //     // 23.59417883424587,
+  //     17.817,
+  //     17.817 * 2
+  //   ) -
+  //   multiplier / 10;
+  // console.log(FRET_DISTANCE_DIVISOR);
+
   return Array.from({ length: fretsQuantity }).reduce(
     (lengths, _, index) => {
       lengths.push(
@@ -64,11 +83,16 @@ const fretDistancesFromNut = (
     [0]
   );
 };
+// const scaleLength = (divisions = divisionsPerOctave.value) =>
+//   (height * 4) / 3 //+ Math.log(divisions / 12) * (height / 300);
+const scaleLength = () => VIEWBOX_Y_MAX * 0.67129 * 0.98568783;
+// const scaleLength = ()=>VIEWBOX_Y_MAX * 0.67129
+// const scaleLength = height;
 
 const startingFret = 0;
-const endingFret = computed(() => Math.round(2 * divisionsPerOctave.value));
+const endingFret = computed(() => 2 * divisionsPerOctave.value);
 const fretDistances = computed(() =>
-  fretDistancesFromNut(endingFret.value, VIEWBOX_Y_MAX * 0.67129)
+  fretDistancesFromNut(endingFret.value, scaleLength())
 );
 const fretSpacing = computed(() => fretDistances.value.slice(1));
 const fretHeights = computed(() =>
@@ -80,8 +104,8 @@ const fretHeights = computed(() =>
 const reachableFrets = computed(() => range(startingFret, endingFret.value));
 const tet12 = {
   reachableFrets: range(0, 24),
-  fretDistances: fretDistancesFromNut(24, VIEWBOX_Y_MAX * 0.67129, 12),
-  fretSpacing: fretDistancesFromNut(24, VIEWBOX_Y_MAX * 0.67129, 12).slice(1),
+  fretDistances: fretDistancesFromNut(24, scaleLength(12), 12),
+  fretSpacing: fretDistancesFromNut(24, scaleLength(12), 12).slice(1),
 };
 
 // console.log(tet12);
