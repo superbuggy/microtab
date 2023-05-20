@@ -1,29 +1,20 @@
 <script setup>
-import { useGuitar } from "../state/guitar";
-import { useTone } from "../effects/tone";
-import { useTemperament } from "../state/temperament";
+import FretBoardControls from "./FretBoardControls.vue";
+
+import { computed } from "vue";
 import { remPixels, isOdd, range, mapValueToRange } from "../helpers";
-import { computed, ref, onUpdated } from "vue";
 
-// import * as Tone from "tone";
-
-// const tempo = ref(120);
+import { useGuitar } from "../state/guitar";
+import { useTemperament } from "../state/temperament";
+import { useFretBoardControls } from "../state/fretboard-controls";
 
 const { pitchClassNames, divisionsPerOctave } = useTemperament();
-const { Tone, changeTempo, tempo, playNoteSequence, isLooped, bps } = useTone();
-
-const shouldShow12TETFrets = ref(false);
-
+const { shouldShow12TETFrets, areFretColorsInverted } = useFretBoardControls();
 const {
   stringQuantity,
   stringNumbers,
   scaleNotesOnStrings,
-  scaleNames,
-  selectScale,
-  selectedScaleName,
   selectedScale,
-  notesPerString,
-  selectNotesPerString,
   startingFromFret,
 } = useGuitar();
 
@@ -145,70 +136,10 @@ const stringSpacing = width / (stringQuantity.value - 1);
 const fontSize = remPixels() * 2.5;
 const textOffsetX = 0.5 * fontSize;
 const textOffsetY = fontSize;
-
-function playScale() {
-  const ascendingScale = Object.values(scaleNotesOnStrings.value)
-    .flat()
-    .map(({ note }, index) => ({
-      time: index / bps.value,
-      note: [note.frequency * 2],
-    }));
-  const notesToPlay = [
-    ...ascendingScale,
-    ...ascendingScale
-      .slice()
-      .reverse()
-      .map(({ note }, index) => ({
-        time: (ascendingScale.length + index) / bps.value,
-        note,
-      })),
-  ];
-
-  playNoteSequence(notesToPlay);
-}
 </script>
 
 <template>
-  <div class="controls">
-    <select name="" id="" @input="selectScale($event.target.value)">
-      <option
-        v-for="scaleName in scaleNames"
-        :key="scaleName"
-        :value="scaleName"
-        :selected="scaleName === selectedScaleName"
-      >
-        {{ scaleName }}
-      </option>
-    </select>
-    <select @change="selectNotesPerString($event.target.value)">
-      <option
-        v-for="notesPerStringSelection in ['All', 3, 4, 5]"
-        :key="notesPerStringSelection"
-        :value="notesPerStringSelection"
-        :selected="notesPerString === notesPerStringSelection"
-      >
-        {{
-          `${
-            notesPerStringSelection === -1 ? "All" : notesPerStringSelection
-          } notes per string`
-        }}
-      </option>
-    </select>
-    <input type="number" name="" id="" v-model="startingFromFret" />
-    <button @click="playScale">Play Scale</button>
-    <label for="tempo">
-      <span>{{ tempo }}</span> BPM
-      <input type="range" min="30" max="180" :value="tempo" @input="changeTempo" />
-    </label>
-    <label for="loop">
-      Loop?
-      <input type="checkbox" v-model="isLooped" />
-    </label>
-    <label for="">
-      12Tet?
-      <input type="checkbox" v-model="shouldShow12TETFrets" />
-    </label>
-  </div>
+  <FretBoardControls />
   <div>
     <span> Intervals {{ selectedScale.intervals.join(" ") }}</span>
   </div>
@@ -230,7 +161,7 @@ function playScale() {
   <div class="svg-container">
     <svg
       :viewBox="`0 0 ${VIEWBOX_X_MAX} ${VIEWBOX_Y_MAX}`"
-      xmlns="http://www.w3.org/2000/svg"
+      :class="{ 'inverted-fret-colors': areFretColorsInverted }"
     >
       <text
         :x="x + 0.5 * textOffsetX"
@@ -351,40 +282,12 @@ function playScale() {
           :y2="tet12.fretSpacing[fret] + y"
           stroke-width="2"
         />
-
-        <!-- <g v-for="fretDot in fretDots" :key="fretDot">
-          <circle
-            :cx="
-              (fretDot + fretDotModifier) % divisionsPerOctave === 0 ? width * 0.8 : width
-            "
-            :cy="fretSpacing[fretDot - 1] + y"
-            :r="
-              Math.min(
-                stringSpacing / 3,
-                (fretHeights[fretDot] || fretHeights[fretDot - 1]) * 0.666
-              )
-            "
-            class="fret-dot"
-          />
-          <circle
-            v-if="(fretDot + fretDotModifier) % divisionsPerOctave === 0"
-            :cx="width * 1.2"
-            :cy="fretSpacing[fretDot - 1] + y"
-            :r="
-              Math.min(
-                stringSpacing / 3,
-                (fretHeights[fretDot] || fretHeights[fretDot - 1]) * 0.666
-              )
-            "
-            class="fret-dot octave-dots"
-          />
-        </g> -->
       </g>
     </svg>
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 svg {
   /* width: 800px; */
   width: 400px;
@@ -394,9 +297,45 @@ svg {
 
 div.svg-container {
   max-height: 350px;
-}
-svg {
-  overflow: hidden;
+  svg {
+    text {
+      font-family: "Fondamento", cursive;
+      text-anchor: end;
+    }
+
+    line:not(.tet-12-overlay) {
+      stroke: #000;
+    }
+    line.tet-12-overlay {
+      stroke: #ff00003d;
+    }
+    &.inverted-fret-colors {
+      line:not(.tet-12-overlay) {
+        stroke: #ff00007d;
+      }
+      line.tet-12-overlay {
+        stroke: #000;
+      }
+    }
+
+    rect.tab {
+      stroke: #000;
+      fill: #fff;
+    }
+
+    circle.fret:not(.active) {
+      fill: transparent;
+    }
+
+    circle.fret-dot {
+      fill: #ccc;
+    }
+
+    circle.active.fret {
+      /* fill: #333; */
+      stroke: rgba(0, 0, 0, 0.4);
+    }
+  }
 }
 
 label[for="tempo"] span {
@@ -412,36 +351,5 @@ label[for="tempo"] span {
   padding: 0.125rem 0.25rem;
   min-width: 2rem;
   text-align: center;
-}
-
-svg text {
-  font-family: "Fondamento", cursive;
-  text-anchor: end;
-}
-
-/* g:not(.overlay) */
-line:not(.tet-12-overlay) {
-  stroke: #000;
-}
-line.tet-12-overlay {
-  stroke: #ff00003d;
-}
-
-rect.tab {
-  stroke: #000;
-  fill: #fff;
-}
-
-circle.fret:not(.active) {
-  fill: transparent;
-}
-
-circle.fret-dot {
-  fill: #ccc;
-}
-
-circle.active.fret {
-  /* fill: #333; */
-  stroke: rgba(0, 0, 0, 0.4);
 }
 </style>
