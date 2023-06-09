@@ -60,7 +60,7 @@ const { shouldShow12TETFrets, areFretColorsInverted } = useFretBoardControls();
 
 // const tempo = ref(120);
 
-const { changeTempo, tempo, isLooped, bps } = useTone();
+const { changeTempo, tempo, isLooped, bps, playNoteSequence } = useTone();
 
 const {
   scaleNames,
@@ -70,7 +70,6 @@ const {
   selectNotesPerString,
   startingFromFret,
   scaleNotesOnStrings,
-  playNoteSequence,
 } = useGuitar();
 
 function playScale() {
