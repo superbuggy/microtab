@@ -22,6 +22,9 @@ export function useTone() {
     const synth = new Tone.PolySynth().toDestination();
     const noteDuration = 0.25;
     const sequenceDuration = notesToPlay.length * noteDuration;
+    const sequence = isLooped.value
+      ? notesToPlay
+      : [...notesToPlay, { time: sequenceDuration, note: "END" }];
 
     const part = new Tone.Part(
       (time, { note }) => {
@@ -31,7 +34,8 @@ export function useTone() {
           callback();
         }
       },
-      [...notesToPlay, { time: sequenceDuration, note: "END" }]
+      // [...notesToPlay, { time: sequenceDuration, note: "END" }]
+      sequence
     );
     console.log(part, notesToPlay);
     part.start(0);
@@ -54,6 +58,6 @@ export function useTone() {
     isLooped,
     bps,
     playNote,
-    stopPlayback
+    stopPlayback,
   };
 }
