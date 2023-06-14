@@ -7,7 +7,9 @@ import { remPixels, isOdd, range, mapValueToRange } from "../helpers";
 import { useGuitar } from "../state/guitar";
 import { useTemperament } from "../state/temperament";
 import { useFretBoardControls } from "../state/fretboard-controls";
+import { useTone } from "../effects/tone";
 
+const { playNote } = useTone();
 const { pitchClassNames, divisionsPerOctave } = useTemperament();
 const { shouldShow12TETFrets, areFretColorsInverted } = useFretBoardControls();
 const {
@@ -237,29 +239,41 @@ const textOffsetY = fontSize;
         />
       </g>
       <g v-for="fret in reachableFrets" :key="fret">
-        <circle
-          v-for="(string, index) in stringNumbers"
-          class="fret"
-          :key="string"
-          :cy="fretDistances[fret] + y"
-          :cx="index * stringSpacing + x"
-          :r="Math.min(stringSpacing / 5, fretHeights[fret] * 0.333)"
-          :fill="
-            hslForNote(
+        <g v-for="(string, index) in stringNumbers" :key="string">
+          <circle
+            v-if="
               scaleNotesOnStrings[`string${string}`].find(
                 (note) => note.fretNumber === fret
               )
-            ) // TODO: improve performance by not using find in a v-for
-          "
-          stroke-width="4"
-          :class="{
-            active: scaleNotesOnStrings[`string${string}`].find(
-              (note) => note.fretNumber === fret
-            ),
-          }"
-        >
-          <title>{{ fret }}</title>
-        </circle>
+            "
+            class="fret"
+            :cy="fretDistances[fret] + y"
+            :cx="index * stringSpacing + x"
+            :r="Math.min(stringSpacing / 5, fretHeights[fret] * 0.333)"
+            :fill="
+              hslForNote(
+                scaleNotesOnStrings[`string${string}`].find(
+                  (note) => note.fretNumber === fret
+                )
+              ) // TODO: improve performance by not using find in a v-for
+            "
+            @click="
+              playNote(
+                scaleNotesOnStrings[`string${string}`].find(
+                  (note) => note.fretNumber === fret
+                ).note.frequency
+              )
+            "
+            stroke-width="4"
+            :class="{
+              active: scaleNotesOnStrings[`string${string}`].find(
+                (note) => note.fretNumber === fret
+              ),
+            }"
+          >
+            <title>{{ fret }}</title>
+          </circle>
+        </g>
       </g>
       <g v-if="shouldShow12TETFrets">
         <line
@@ -327,12 +341,21 @@ div.svg-container {
       fill: transparent;
     }
 
+    circle.fret {
+      cursor: pointer;
+    }
+    circle.active.fret:hover {
+      stroke: rgba(255, 255, 255, 0.5);
+      stroke-width: 10px;
+    }
+
     circle.fret-dot {
       fill: #ccc;
     }
 
     circle.active.fret {
       /* fill: #333; */
+      transition: stroke-width 0.5s ease;
       stroke: rgba(0, 0, 0, 0.4);
     }
   }

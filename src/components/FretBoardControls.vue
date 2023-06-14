@@ -27,7 +27,8 @@
     <input type="number" name="" id="" v-model="startingFromFret" />
   </section>
   <section>
-    <button @click="playScale">Play Scale</button>
+    <button v-if="!isPlayingSequence" @click="playScale">Play Scale</button>
+    <button v-else @click="stopPlayingScale">Stop Playing</button>
     <label for="tempo">
       <span>{{ tempo }}</span> BPM
       <input type="range" min="30" max="180" :value="tempo" @input="changeTempo" />
@@ -53,6 +54,7 @@
 import { useGuitar } from "../state/guitar";
 import { useTone } from "../effects/tone";
 import { useFretBoardControls } from "../state/fretboard-controls";
+import { ref } from "vue";
 
 const { shouldShow12TETFrets, areFretColorsInverted } = useFretBoardControls();
 
@@ -60,7 +62,7 @@ const { shouldShow12TETFrets, areFretColorsInverted } = useFretBoardControls();
 
 // const tempo = ref(120);
 
-const { changeTempo, tempo, isLooped, bps, playNoteSequence } = useTone();
+const { changeTempo, tempo, isLooped, bps, playNoteSequence, stopPlayback } = useTone();
 
 const {
   scaleNames,
@@ -71,13 +73,15 @@ const {
   startingFromFret,
   scaleNotesOnStrings,
 } = useGuitar();
+const isPlayingSequence = ref(false);
 
 function playScale() {
+  isPlayingSequence.value = true;
   const ascendingScale = Object.values(scaleNotesOnStrings.value)
     .flat()
     .map(({ note }, index) => ({
       time: index / bps.value,
-      note: [note.frequency * 2],
+      note: [note.frequency],
     }));
   const notesToPlay = [
     ...ascendingScale,
@@ -89,7 +93,13 @@ function playScale() {
         note,
       })),
   ];
+  const onEnd = () => (isPlayingSequence.value = false);
 
-  playNoteSequence(notesToPlay);
+  playNoteSequence(notesToPlay, onEnd);
+}
+
+function stopPlayingScale() {
+  isPlayingSequence.value = false;
+  stopPlayback();
 }
 </script>

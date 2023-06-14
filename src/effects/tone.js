@@ -14,21 +14,46 @@ export function useTone() {
     tempo.value = Number(event.target.value);
     Tone.getTransport().bpm.value = Number(tempo.value);
   }
-  function playNoteSequence(notesToPlay) {
-    Tone.Transport.stop();
-    Tone.Transport.cancel(-1);
+  function playNoteSequence(notesToPlay, callback) {
+    stopPlayback();
     Tone.Transport.start();
     // Tone.start();
 
     const synth = new Tone.PolySynth().toDestination();
-    const part = new Tone.Part((time, { note }) => {
-      synth.triggerAttackRelease(note, 0.25, time);
-    }, notesToPlay);
+    const noteDuration = 0.25;
+    const sequenceDuration = notesToPlay.length * noteDuration;
 
+    const part = new Tone.Part(
+      (time, { note }) => {
+        if (note !== "END") {
+          synth.triggerAttackRelease(note, noteDuration, time);
+        } else {
+          callback();
+        }
+      },
+      [...notesToPlay, { time: sequenceDuration, note: "END" }]
+    );
+    console.log(part, notesToPlay);
     part.start(0);
-    part.loopEnd = part.length/bps.value;
+    part.loopEnd = part.length / bps.value;
     part.loop = isLooped.value;
-    console.log(part, isLooped.value);
   }
-  return { tempo, Tone, changeTempo, playNoteSequence, isLooped, bps };
+  function stopPlayback() {
+    Tone.Transport.stop();
+    Tone.Transport.cancel(-1);
+  }
+  function playNote(noteToPlay) {
+    const synth = new Tone.PolySynth().toDestination();
+    synth.triggerAttackRelease(noteToPlay, 1);
+  }
+  return {
+    tempo,
+    Tone,
+    changeTempo,
+    playNoteSequence,
+    isLooped,
+    bps,
+    playNote,
+    stopPlayback
+  };
 }

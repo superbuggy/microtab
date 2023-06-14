@@ -8,6 +8,7 @@ const { distanceBetweenNotes, noteNames, divisionsPerOctave } =
 
 const DEFAULT_STRING_QUANTITY = 6;
 const TUNING = ["B1", "E2", "A2", "D3", "F#3", "B3"];
+// const TUNING = ["A1", "D2", "G2", "C3", "E3", "A3"];
 const stringQuantity = ref(DEFAULT_STRING_QUANTITY);
 const stringNumbers = Array.from({ length: stringQuantity.value }).map(
   (_, index, { length }) => length - index
