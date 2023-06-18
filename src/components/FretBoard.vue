@@ -35,7 +35,7 @@ const VIEWBOX_Y_MAX = 4000;
 const x = VIEWBOX_X_MAX / 4;
 const y = VIEWBOX_Y_MAX / 8;
 const width = VIEWBOX_X_MAX / 2;
-const height = VIEWBOX_Y_MAX / 2;
+const fretboardHeight = VIEWBOX_Y_MAX / 2;
 
 // const
 // const frettedNotes =Object.entries(scaleNotesOnStrings.value)
@@ -79,8 +79,6 @@ const fretDistancesFromNut = (
 // const scaleLength = (divisions = divisionsPerOctave.value) =>
 //   (height * 4) / 3 //+ Math.log(divisions / 12) * (height / 300);
 const scaleLength = () => VIEWBOX_Y_MAX * 0.67129 * 0.98568783;
-// const scaleLength = ()=>VIEWBOX_Y_MAX * 0.67129
-// const scaleLength = height;
 
 const startingFret = 0;
 const endingFret = computed(() => 2 * divisionsPerOctave.value);
@@ -94,14 +92,13 @@ const fretHeights = computed(() =>
     return distances;
   }, [])
 );
+
 const reachableFrets = computed(() => range(startingFret, endingFret.value));
 const tet12 = {
   reachableFrets: range(0, 24),
   fretDistances: fretDistancesFromNut(24, scaleLength(12), 12),
   fretSpacing: fretDistancesFromNut(24, scaleLength(12), 12).slice(1),
 };
-
-// console.log(tet12);
 
 const fretDots = computed(
   () =>
@@ -111,6 +108,8 @@ const fretDots = computed(
       24: [5, 9, 13, 17, 23, 29, 33, 37, 41, 47],
     }[divisionsPerOctave.value])
 );
+
+// Offset fors fret dot placements in between frets or on frets, depending on temperament
 const fretDotModifier = computed(
   () =>
     ({
@@ -175,14 +174,16 @@ const textOffsetY = fontSize;
       </text>
       <text
         :x="x - 2 * textOffsetX"
-        :y="y + height + 1.5 * textOffsetY"
+        :y="y + fretboardHeight + 1.5 * textOffsetY"
         :font-size="fontSize"
-        :transform="`rotate(90 ${x - textOffsetX} ${y + height + textOffsetY + 2})`"
+        :transform="`rotate(90 ${x - textOffsetX} ${
+          y + fretboardHeight + textOffsetY + 2
+        })`"
         transform-origin=""
       >
         {{ endingFret }}
       </text>
-      <rect :x="x" :y="y" :width="width" :height="height" class="tab" />
+      <rect :x="x" :y="y" :width="width" :height="fretboardHeight" class="tab" />
 
       <g v-for="fret in reachableFrets" :key="fret">
         <rect
@@ -209,7 +210,7 @@ const textOffsetY = fontSize;
         :x1="string * stringSpacing + x"
         :y1="y"
         :x2="string * stringSpacing + x"
-        :y2="y + height"
+        :y2="y + fretboardHeight"
       />
       <g v-for="fretDot in fretDots" :key="fretDot">
         <circle
