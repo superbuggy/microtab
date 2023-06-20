@@ -19,6 +19,11 @@ export class TET extends Temperament {
       );
   }
 
+  get stepSize() {
+    console.log(this)
+    return null;
+  }
+
   frequencyFor(pitchName) {
     const [, pitchClass, octave] = pitchName.match(/([^0-9]+)(\d)/);
     return super.getPitch(pitchClass, octave);

@@ -3,6 +3,11 @@ export const addKey = (object, key, value = null) => {
   return object;
 };
 
+export const objectMap = (object, fn) =>
+  Object.entries(object).reduce((a, [k, v]) => addKey(a, k, fn(k, v)), {});
+
+export const objectFilter = (object, fn) => Object.entries(object).filter(fn);
+
 export const mapValueToRange = (
   valueInFromRange,
   fromMin,
