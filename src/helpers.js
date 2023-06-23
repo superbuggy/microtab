@@ -1,3 +1,5 @@
+import pitchClassNumbers12TET from "./definitions/12-tet-pitch-class-numbers.json";
+
 export const addKey = (object, key, value = null) => {
   object[key] = value;
   return object;
@@ -111,4 +113,51 @@ export const range = (beginning, end) => {
     { length },
     (_, index) => index * directionMultipler + beginning
   );
+};
+
+// 120	C9
+// 60	C4 (middle C)
+// 12	C0
+// 0	C-1
+export const midiNoteNumberToPitchName = (
+  midiNoteNumber,
+  shouldPreferSharps = true
+) => {
+  const includedAccidental = shouldPreferSharps ? "#" : "b";
+  const octave = Math.floor(midiNoteNumber / 12);
+  const pitchClassNumber = midiNoteNumber % 12;
+  const isNatural = (pitchClassName) => !pitchClassName.match(/[b#]/);
+  return (
+    Object.fromEntries(
+      Object.entries(pitchClassNumbers12TET)
+        .filter(
+          ([pitchClassName]) =>
+            pitchClassName.includes(includedAccidental) ||
+            isNatural(pitchClassName)
+        )
+        // Exclude unintuitive pitch class names, like B# for C
+        .filter(
+          ([pitchClassName, pitchClassNumber], _, pitches) =>
+            !pitches.find(
+              ([comparisonPitchClassName, comparisonPitchClassNumber]) =>
+                comparisonPitchClassNumber === pitchClassNumber &&
+                comparisonPitchClassName !== pitchClassName &&
+                comparisonPitchClassName.length < pitchClassName.length
+            )
+        )
+        .map((entry) => entry.reverse())
+    )[pitchClassNumber] + `${octave}`
+  );
+};
+
+export const A_440_MIDI_NOTE_NUMBER = 69;
+export const A_440 = 440;
+
+export const frequencyToMidiNoteNumber = (frequency) => {
+  // m = 12*log2(fm/440 Hz) + 69
+  return Math.round(12 * Math.log2(frequency / A_440) + A_440_MIDI_NOTE_NUMBER);
+};
+export const midiNoteNumberToFrequency = (midiNoteNumber) => {
+  // fm = 2(m−69)/12(440 Hz)
+  return 2 ** ((midiNoteNumber - A_440_MIDI_NOTE_NUMBER) / 12) * A_440;
 };
