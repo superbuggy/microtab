@@ -133,7 +133,6 @@ function handleHover(event, note) {
 }
 
 function resetPopUp() {
-  return;
   popUpNote.value = null;
   popUpX.value = null;
   popUpY.value = null;

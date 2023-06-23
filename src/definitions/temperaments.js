@@ -1,11 +1,18 @@
+import { useTuning } from "../state/tuning";
+const { TUNING } = useTuning();
+import pitchMap from './12-tet-pitch-frequencies.json'
+
+const referencePitch = pitchMap[TUNING.value[0]];
+const referenceName = TUNING.value[0].replace(/\d/g, "");
+
 // TODO: Support enharmonicity
 
 export const tet12schema = {
   name: "12 TET",
   description: "Standard 12-tone equal temperament.",
   source: "https://en.wikipedia.org/wiki/12_equal_temperament",
-  referenceName: "B",
-  referencePitch: 30.87,
+  referenceName,
+  referencePitch,
   referenceOctave: 0,
   octaveBaseName: "C",
   notes: {
@@ -28,8 +35,8 @@ export const tet24schema = {
   name: "24 TET",
   description: "Standard 24-tone equal temperament.",
   source: "https://en.wikipedia.org/wiki/Quarter_tone#Quarter-tone_scale",
-  referenceName: "B",
-  referencePitch: 30.87,
+  referenceName,
+  referencePitch,
   referenceOctave: 0,
   octaveBaseName: "C",
   notes: {
@@ -64,8 +71,8 @@ export const tet16schema = {
   name: "16 TET",
   description: "Standard 16-tone equal temperament.",
   source: "https://en.xen.wiki/w/16edo",
-  referenceName: "B",
-  referencePitch: 30.87,
+  referenceName,
+  referencePitch,
   referenceOctave: 0,
   octaveBaseName: "C",
   notes: {
@@ -94,8 +101,8 @@ export const tet17schema = {
   name: "17 TET",
   description: "Standard 17-tone equal temperament.",
   source: "https://en.xen.wiki/w/17edo",
-  referenceName: "B",
-  referencePitch: 30.87,
+  referenceName,
+  referencePitch,
   referenceOctave: 0,
   octaveBaseName: "C",
   // temperament.js has a bug in the check to see if a note has been defined conflictually--Math.round workaround
