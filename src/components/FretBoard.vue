@@ -1,9 +1,10 @@
 <script setup>
 import FretBoardControls from "./FretBoardControls.vue";
+import PopOver from "./PopOver.vue";
 
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { remPixels, isOdd, range, mapValueToRange } from "../helpers";
-import { objectMap, objectFilter } from "../helpers";
+import { objectMap } from "../helpers";
 
 import { useGuitar } from "../state/guitar";
 import { useTemperament } from "../state/temperament";
@@ -20,7 +21,6 @@ const {
 const { shouldShow12TETFrets } = useFretBoardControls();
 const {
   stringQuantity,
-  stringNumbers,
   scaleNotesOnStrings,
   selectedScale,
   startingFromFret,
@@ -43,6 +43,10 @@ const x = VIEWBOX_X_MAX / 4;
 const y = VIEWBOX_Y_MAX / 8;
 const width = VIEWBOX_X_MAX / 2;
 const fretboardHeight = VIEWBOX_Y_MAX / 2;
+
+const popUpX = ref(null);
+const popUpY = ref(null);
+const popUpNote = ref(null);
 
 const SCALE_LENGTH = 25.5;
 
@@ -105,7 +109,12 @@ const fretDistancesFromNut = (divisions = divisionsPerOctave.value) => {
 
 const startingFret = 0;
 const endingFret = computed(() => 2 * divisionsPerOctave.value);
-const fretDistances = computed(() => fretDistancesFromNut());
+const reachableFrets = computed(() =>
+  shouldShow12TETFrets.value ? range(0, 24) : range(startingFret, endingFret.value)
+);
+const fretDistances = computed(() =>
+  fretDistancesFromNut(shouldShow12TETFrets.value ? 12 : divisionsPerOctave.value)
+);
 const fretSpacing = computed(() => fretDistances.value.slice(1));
 const fretHeights = computed(() =>
   fretSpacing.value.reduce((distances, length, index) => {
@@ -114,13 +123,22 @@ const fretHeights = computed(() =>
   }, [])
 );
 
-const reachableFrets = computed(() => range(startingFret, endingFret.value));
-const tet12 = {
-  reachableFrets: range(0, 24),
-  fretDistances: fretDistancesFromNut(12),
-  fretSpacing: fretDistancesFromNut(12).slice(1),
-};
-console.log();
+function handleHover(event, note) {
+  popUpX.value = Number(event.target.attributes.cx.value);
+  popUpY.value = Number(event.target.attributes.cy.value);
+  popUpNote.value = note;
+  console.log(popUpX.value);
+  console.log(popUpY.value);
+  console.log(popUpNote.value);
+}
+
+function resetPopUp() {
+  return;
+  popUpNote.value = null;
+  popUpX.value = null;
+  popUpY.value = null;
+}
+
 const fretDots = computed(() =>
   shouldShow12TETFrets.value
     ? [3, 5, 7, 9, 12, 15, 17, 19, 21, 24]
@@ -128,20 +146,13 @@ const fretDots = computed(() =>
         12: [3, 5, 7, 9, 12, 15, 17, 19, 21, 24],
         16: [3, 5, 7, 9, 11, 13, 16, 19, 21, 23, 25, 27, 29, 32],
         17: [4, 7, 10, 13, 17, 21, 24, 27, 30, 34],
-        24: [5, 9, 13, 17, 23, 29, 33, 37, 41, 47],
+        24: [6, 10, 14, 18, 24, 30, 34, 38, 42, 48],
       }[divisionsPerOctave.value]
 );
-
-// Offset fors fret dot placements in between frets or on frets, depending on temperament
-const fretDotModifier = computed(
-  () =>
-    ({
-      16: 0,
-      17: 0,
-      24: 1,
-    }[divisionsPerOctave.value])
-);
-// .filter((fret) => fret > startingFret && fret < endingFret);
+// const fretDotSpacing = shouldShow12TETFrets.value ?
+// shouldShow12TETFrets
+//               ? (fretSpacing[fretDot - 1] + fretSpacing[fretDot - 2]) / 2 + y
+//               : fretSpacing[fretDot - 1] + y
 
 const hue = (degree, upperBound) => (360 * degree) / upperBound;
 const hsl = (degree, upperBound, l = 75) =>
@@ -208,106 +219,105 @@ const textOffsetY = fontSize;
       </text>
       <rect :x="x" :y="y" :width="width" :height="fretboardHeight" class="tab" />
 
-      <g v-for="fret in reachableFrets" :key="fret">
-        <rect
-          v-if="divisionsPerOctave === 24 && isOdd(fret + 1)"
-          :key="fret"
-          :x="x"
-          :y="fretDistances[fret] + y"
-          :width="width"
-          :height="fretHeights[fret]"
-          fill="#eee"
-        />
-        <line
-          v-if="fretSpacing[fret]"
-          class="fret"
-          :key="fret"
-          :x1="x"
-          :y1="fretSpacing[fret] + y"
-          :x2="x + width"
-          :y2="fretSpacing[fret] + y"
-        />
-      </g>
-      <line
-        v-for="string in stringQuantity - 2"
-        :key="string"
-        :x1="string * stringSpacing + x"
-        :y1="y"
-        :x2="string * stringSpacing + x"
-        :y2="y + fretboardHeight"
-      />
-      <g v-for="fretDot in fretDots" :key="fretDot">
-        <circle
-          :cx="
-            (fretDot + fretDotModifier) %
-              (shouldShow12TETFrets ? 12 : divisionsPerOctave) ===
-            0
-              ? width * 0.8
-              : width
-          "
-          :cy="
-            shouldShow12TETFrets
-              ? tet12.fretSpacing[fretDot - 1] + y
-              : fretSpacing[fretDot - 1] + y
-          "
-          :r="
-            Math.min(
-              stringSpacing / 3,
-              (fretHeights[fretDot] || fretHeights[fretDot - 1]) * 0.666
-            )
-          "
-          class="fret-dot"
-        />
-        <circle
-          v-if="
-            (fretDot + fretDotModifier) %
-              (shouldShow12TETFrets ? 12 : divisionsPerOctave) ===
-            0
-          "
-          :cx="width * 1.2"
-          :cy="
-            shouldShow12TETFrets
-              ? tet12.fretSpacing[fretDot - 1] + y
-              : fretSpacing[fretDot - 1] + y
-          "
-          :r="
-            Math.min(
-              stringSpacing / 3,
-              (fretHeights[fretDot] || fretHeights[fretDot - 1]) * 0.666
-            )
-          "
-          class="fret-dot octave-dots"
-        />
-      </g>
-      <g v-for="fret in reachableFrets" :key="fret">
-        <g v-for="(string, index) in Object.keys(stringNotes)" :key="string">
-          <circle
-            v-for="{ note, fretNumber, noteY } in stringNotes[string]"
-            :key="`${string}-${fretNumber}`"
-            class="fretted-note active"
-            :cx="index * stringSpacing + x"
-            :cy="noteY + y"
-            :r="Math.min(stringSpacing / 5)"
-            :fill="hslForNote(note)"
-            @click="playNote(note.frequency)"
-            stroke-width="4"
-          >
-            <title>{{ fretNumber }}</title>
-          </circle>
+      <g class="frets-group">
+        <g v-for="fret in reachableFrets" :key="fret">
+          <rect
+            v-if="divisionsPerOctave === 24 && isOdd(fret + 1)"
+            :key="fret"
+            :x="x"
+            :y="fretDistances[fret] + y"
+            :width="width"
+            :height="fretHeights[fret]"
+            fill="#eee"
+          />
+          <line
+            v-if="fretSpacing[fret]"
+            class="fret"
+            :key="fret"
+            :x1="x"
+            :y1="fretSpacing[fret] + y"
+            :x2="x + width"
+            :y2="fretSpacing[fret] + y"
+          />
+        </g>
+        <g v-if="shouldShow12TETFrets">
+          <line
+            v-for="fret in reachableFrets"
+            class="tet-12-overlay fret"
+            :key="fret"
+            :x1="x"
+            :y1="fretSpacing[fret] + y"
+            :x2="x + width"
+            :y2="fretSpacing[fret] + y"
+            stroke-width="2"
+          />
         </g>
       </g>
-      <g v-if="shouldShow12TETFrets">
+      <g class="string-group">
         <line
-          v-for="fret in tet12.reachableFrets"
-          class="tet-12-overlay"
-          :key="fret"
-          :x1="x"
-          :y1="tet12.fretSpacing[fret] + y"
-          :x2="x + width"
-          :y2="tet12.fretSpacing[fret] + y"
-          stroke-width="2"
+          v-for="string in stringQuantity - 2"
+          :key="string"
+          :x1="string * stringSpacing + x"
+          :y1="y"
+          :x2="string * stringSpacing + x"
+          :y2="y + fretboardHeight"
         />
       </g>
+      <g class="fret-dots-group">
+        <g v-for="fretDot in fretDots" :key="fretDot">
+          <circle
+            :cx="
+              fretDot % (shouldShow12TETFrets ? 12 : divisionsPerOctave) === 0
+                ? width * 0.8
+                : width
+            "
+            :cy="
+              divisionsPerOctave !== 24
+                ? (fretSpacing[fretDot - 1] + fretSpacing[fretDot - 2]) / 2 + y
+                : fretSpacing[fretDot - 1] + y
+            "
+            :r="Math.min(stringSpacing / 3, fretHeights[fretDot] * 0.4)"
+            class="fret-dot"
+          >
+            <title>{{ fretHeights[fretDot] * 0.666 }}, {{ stringSpacing / 3 }}</title>
+          </circle>
+          <circle
+            v-if="fretDot % (shouldShow12TETFrets ? 12 : divisionsPerOctave) === 0"
+            :cx="width * 1.2"
+            :cy="
+              divisionsPerOctave !== 24
+                ? (fretSpacing[fretDot - 1] + fretSpacing[fretDot - 2]) / 2 + y
+                : fretSpacing[fretDot - 1] + y
+            "
+            :r="Math.min(stringSpacing / 3, fretHeights[fretDot] * 0.4)"
+            class="fret-dot octave-dots"
+          />
+        </g>
+      </g>
+      <g class="fretted-notes-group">
+        <g v-for="fret in reachableFrets" :key="fret">
+          <g v-for="(string, index) in Object.keys(stringNotes)" :key="string">
+            <circle
+              @mouseover="handleHover($event, note)"
+              @mouseout="resetPopUp"
+              v-for="{ note, fretNumber, noteY } in stringNotes[string]"
+              :key="`${string}-${fretNumber}`"
+              class="fretted-note active"
+              :cx="index * stringSpacing + x"
+              :cy="noteY + y"
+              :r="Math.min(stringSpacing / 5)"
+              :fill="hslForNote(note)"
+              @click="playNote(note.frequency)"
+              stroke-width="4"
+            >
+              <title>{{ fretNumber }}</title>
+            </circle>
+          </g>
+        </g>
+      </g>
+      <PopOver :x="popUpX" :y="popUpY">
+        <p v-if="popUpNote">Frequency: {{ popUpNote.pitch }}</p>
+      </PopOver>
     </svg>
   </div>
 </template>
