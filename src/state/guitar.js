@@ -28,10 +28,7 @@ const lowestNote = tuning.value[`string${stringNumbers[0]}`];
 const scales = ref(scalesFor(lowestNote.replace(/\d/, "")));
 const selectedScaleName = ref("Ionian");
 
-const selectedScale = computed(() => {
-  console.log(scales.value, selectedScaleName.value);
-  return scales.value[selectedScaleName.value];
-});
+const selectedScale = computed(() => scales.value[selectedScaleName.value]);
 
 const defaultScalesPerTet = {
   16: "Rank 3 Minor [7] A",
@@ -42,8 +39,6 @@ const defaultScalesPerTet = {
 watch(divisionsPerOctave, (perOctave) => {
   selectedScaleName.value = defaultScalesPerTet[perOctave];
   scales.value = scalesFor(lowestNote.replace(/\d/, ""));
-
-  console.log(scales.value);
 });
 
 const notesPerString = ref(3);

@@ -307,6 +307,7 @@ const textOffsetY = fontSize;
               :r="Math.min(stringSpacing / 5)"
               :fill="hslForNote(note)"
               @click="playNote(note.frequency)"
+              :id="`note-${note.frequency}-hz`"
               stroke-width="4"
             >
               <title>{{ fretNumber }}</title>
@@ -356,20 +357,22 @@ div.svg-container {
 
     circle.fretted-note {
       cursor: pointer;
+      transition: stroke-width 0.5s ease;
+      stroke: rgba(0, 0, 0, 0.4);
+      &:hover {
+        stroke: rgba(255, 255, 255, 0.5);
+        stroke-width: 10px;
+      }
     }
-    circle.fretted-note:hover {
-      stroke: rgba(255, 255, 255, 0.5);
+    circle.is-playing {
+      // stroke: rgba(255, 255, 255, 0.5);
+      transition: none;
+      stroke: rgba(0, 0, 0, 1);
       stroke-width: 10px;
     }
 
     circle.fret-dot {
       fill: #ccc;
-    }
-
-    circle.fretted-note {
-      /* fill: #333; */
-      transition: stroke-width 0.5s ease;
-      stroke: rgba(0, 0, 0, 0.4);
     }
   }
 }
