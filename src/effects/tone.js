@@ -14,30 +14,36 @@ export function useTone() {
     tempo.value = Number(event.target.value);
     Tone.getTransport().bpm.value = Number(tempo.value);
   }
-  function playNoteSequence(notesToPlay, callback) {
+  function playNoteSequence(notesFrequenciesToPlay, onEnd) {
     stopPlayback();
     Tone.Transport.start();
     // Tone.start();
 
     const synth = new Tone.PolySynth().toDestination();
     const noteDuration = 0.25;
-    const sequenceDuration = notesToPlay.length * noteDuration;
+    const sequenceDuration = notesFrequenciesToPlay.length * noteDuration;
     const sequence = isLooped.value
-      ? notesToPlay
-      : [...notesToPlay, { time: sequenceDuration, note: "END" }];
+      ? notesFrequenciesToPlay
+      : [...notesFrequenciesToPlay, { time: sequenceDuration, note: "END" }];
 
     const part = new Tone.Part(
       (time, { note }) => {
         if (note !== "END") {
+          const noteDotEl = document.getElementById(`note-${note}-hz`);
+          noteDotEl.classList.add("is-playing");
+          setTimeout(
+            () => noteDotEl.classList.remove("is-playing"),
+            noteDuration * 1000
+          );
           synth.triggerAttackRelease(note, noteDuration, time);
         } else {
-          callback();
+          onEnd();
         }
       },
       // [...notesToPlay, { time: sequenceDuration, note: "END" }]
       sequence
     );
-    console.log(part, notesToPlay);
+    console.log(part, notesFrequenciesToPlay);
     part.start(0);
     part.loopEnd = part.length / bps.value;
     part.loop = isLooped.value;
