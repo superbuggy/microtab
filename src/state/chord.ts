@@ -1,8 +1,8 @@
 import { ref } from "vue";
-import { addKey } from "../helpers.js";
-import { useGuitar } from "./guitar.js";
+import { addKey } from "../helpers";
+import { useGuitar } from "./guitar";
 import { v4 as uuidv4 } from "uuid";
-import { useTemperament } from "./temperament.js";
+import { useTemperament } from "./temperament";
 import * as Tone from "tone";
 
 const { stringQuantity, tuning } = useGuitar();
