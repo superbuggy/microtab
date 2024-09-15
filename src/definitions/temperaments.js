@@ -2,11 +2,15 @@ import { useTuning } from "../state/tuning";
 const { TUNING } = useTuning();
 import pitchMap from './12-tet-pitch-frequencies.json'
 
+
+// TODO: convert to ref
 const referencePitch = pitchMap[TUNING.value[0]];
 const referenceName = TUNING.value[0].replace(/\d/g, "");
 
 // TODO: Support enharmonicity
 
+
+// TODO: convert to tet-builder functions that take name and pitch as args
 export const tet12schema = {
   name: "12 TET",
   description: "Standard 12-tone equal temperament.",
