@@ -7,7 +7,8 @@ import {
 } from "../definitions/temperaments";
 
 import { TET, noteInTET } from "../definitions/TET";
-import { addKey } from "../helpers";
+import { setKeyIn } from "../helpers";
+import type { PitchName, SupportedEDOs, TetSchema } from "../definitions/types";
 
 const schemas = [tet12schema, tet16schema, tet17schema, tet24schema];
 const equalTemperaments = schemas.map((schema) => new TET(schema));
@@ -20,16 +21,16 @@ const chosenTemperamentName = ref(temperamentNames[3]);
 const chosenTemperament = computed(
   () => temperaments[chosenTemperamentName.value]
 );
-const chooseTemperament = (temperamentName) => {
+const chooseTemperament = (temperamentName: string) => {
   chosenTemperamentName.value = temperamentName;
 };
 
 const Note = computed(() => noteInTET(chosenTemperament.value));
 
-const noteFromStepsAbove = (referenceNoteName, stepsAbove) =>
+const noteFromStepsAbove = (referenceNoteName: string, stepsAbove: number) =>
   chosenTemperament.value.noteFromStepsAbove(referenceNoteName, stepsAbove);
 
-const distanceBetweenNotes = (lowerNote, higherNote) =>
+const distanceBetweenNotes = (lowerNote: PitchName, higherNote: PitchName) =>
   chosenTemperament.value.distanceBetweenNotes(lowerNote, higherNote);
 
 const noteNames = computed(() => chosenTemperament.value.pitchNames);
@@ -42,35 +43,36 @@ const notes = computed(() =>
 );
 const notesDictionary = computed(() =>
   notes.value.reduce(
-    (dictionary, note) => addKey(dictionary, note.pitch, note),
+    (dictionary, note) => setKeyIn(dictionary, note.pitch, note),
     {}
   )
 );
 
-const temperamentFor = (octavalDivisions) => {
-  const name = schemas.find((schema) =>
-    schema.name.includes(octavalDivisions)
-  ).name;
-  console.log(name, temperaments[name]);
+const temperamentFor = (octavalDivisions: number) => {
+  const name = schemas.find((schema: TetSchema) => schema.name.includes(`${octavalDivisions}`))?.name;
+  if (!name) throw new Error(`Temperament not found for ${octavalDivisions} TET  `);
+  console.log(name, temperaments[name]);  
   return temperaments[name];
 };
 
-const notesFor = (octavalDivisions) => {
+const notesFor = (octavalDivisions: number) => {
   const temperament = temperaments[`${octavalDivisions} TET`];
   const TETNote = noteInTET(temperament);
   return temperamentFor(octavalDivisions).pitchNames.map(
     (pitchName) => new TETNote(pitchName)
   );
 };
-const notesDictionaryFor = (octavalDivisions) => {
+const notesDictionaryFor = (octavalDivisions: number) => {
   return notesFor(octavalDivisions).reduce(
-    (dictionary, note) => addKey(dictionary, note.pitch, note),
+    (dictionary, note) => setKeyIn(dictionary, note.pitch, note),
     {}
   );
 };
 
 // For debugging purposes
+// @ts-ignore
 window.chosenTemperament = chosenTemperament.value;
+// @ts-ignore
 window.Note = Note.value;
 
 const divisionsPerOctave = computed(
@@ -80,7 +82,7 @@ const divisionsPerOctave = computed(
       "16 TET": 16,
       "17 TET": 17,
       "24 TET": 24,
-    }[chosenTemperamentName.value])
+    }[chosenTemperamentName.value]) as SupportedEDOs
 );
 export function useTemperament() {
   return {

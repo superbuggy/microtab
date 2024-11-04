@@ -1,34 +1,36 @@
 import pitchClassNumbers12TET from "./definitions/12-tet-pitch-class-numbers.json";
 
-export const addKey = (object, key, value = null) => {
+export const setKeyIn = (object: ObjectMappable, key: string, value: any = null): ObjectMappable => {
   object[key] = value;
   return object;
 };
 
-export const objectMap = (object, fn) =>
-  Object.entries(object).reduce((a, [k, v]) => addKey(a, k, fn(k, v)), {});
+type Callback = (...args: any[]) => any;
+type ObjectMappable = Record<string | number, any>;
+export const objectMap = (object: ObjectMappable, fn: Callback) =>
+  Object.entries(object).reduce((a, [k, v]) => setKeyIn(a, k, fn(k, v)), {});
 
-export const objectFilter = (object, fn) => Object.entries(object).filter(fn);
+export const objectFilter = (object: ObjectMappable, fn: Callback) => Object.entries(object).filter(fn);
 
 export const mapValueToRange = (
-  valueInFromRange,
-  fromMin,
-  fromMax,
-  toMin,
-  toMax
+  valueInFromRange: number,
+  fromMin: number,
+  fromMax: number,
+  toMin: number,
+  toMax: number,
 ) =>
   toMin +
   ((valueInFromRange - fromMin) * (toMax - toMin)) / (fromMax - fromMin);
 
-export const sum = (numbers) => numbers.reduce((sum, number) => sum + number);
+export const sum = (numbers: number[]) => numbers.reduce((sum, number) => sum + number);
 
 export const remPixels = () =>
   parseFloat(getComputedStyle(document.documentElement).fontSize);
 
-export const mod = (n, m) => ((n % m) + m) % m;
+export const mod = (n: number, m: number) => ((n % m) + m) % m;
 
-export const isEven = (i) => i % 2 === 0;
-export const isOdd = (i) => i % 2 !== 0;
+export const isEven = (i: number) => i % 2 === 0;
+export const isOdd = (i: number) => i % 2 !== 0;
 
 // Bjorklund algorithm from https://gist.github.com/withakay/1286731
 
@@ -43,7 +45,7 @@ E. Bjorklund.
 Jack Rutherford
 */
 
-export const euclideanPattern = (pulses, steps) => {
+export const euclideanPattern = (pulses: number, steps: number) => {
   // renamed from the original
   steps = Math.round(steps);
   pulses = Math.round(pulses);
@@ -52,9 +54,9 @@ export const euclideanPattern = (pulses, steps) => {
     return [];
   }
 
-  let pattern = [];
-  let counts = [];
-  let remainders = [];
+  let pattern: number[] = [];
+  let counts: number[] = [];
+  let remainders: number[] = [];
   let divisor = steps - pulses;
   remainders.push(pulses);
   let level = 0;
@@ -74,7 +76,7 @@ export const euclideanPattern = (pulses, steps) => {
 
   function builder() {
     let repetition = 0; // eslint-disable-line
-    return function build(level) {
+    return function build(level: number) {
       repetition += 1;
       if (level > -1) {
         for (var i = 0; i < counts[level]; i++) {
@@ -95,7 +97,7 @@ export const euclideanPattern = (pulses, steps) => {
   return pattern.reverse();
 };
 
-export const rotate = (array, times = 0) => {
+export const rotate = (array: any[], times = 0) => {
   if (!array.length) return [];
   let rotatedArray = array.slice();
   let count = 0;
@@ -106,7 +108,7 @@ export const rotate = (array, times = 0) => {
   return rotatedArray;
 };
 
-export const range = (beginning, end) => {
+export const range = (beginning: number, end: number) => {
   const directionMultipler = beginning > end ? -1 : 1;
   const length = Math.abs(end - beginning + directionMultipler);
   return Array.from(
@@ -120,13 +122,13 @@ export const range = (beginning, end) => {
 // 12	C0
 // 0	C-1
 export const midiNoteNumberToPitchName = (
-  midiNoteNumber,
+  midiNoteNumber: number,
   shouldPreferSharps = true
 ) => {
   const includedAccidental = shouldPreferSharps ? "#" : "b";
   const octave = Math.floor(midiNoteNumber / 12);
   const pitchClassNumber = midiNoteNumber % 12;
-  const isNatural = (pitchClassName) => !pitchClassName.match(/[b#]/);
+  const isNatural = (pitchClassName: string) => !pitchClassName.match(/[b#]/);
   return (
     Object.fromEntries(
       Object.entries(pitchClassNumbers12TET)
@@ -153,11 +155,11 @@ export const midiNoteNumberToPitchName = (
 export const A_440_MIDI_NOTE_NUMBER = 69;
 export const A_440 = 440;
 
-export const frequencyToMidiNoteNumber = (frequency) => {
+export const frequencyToMidiNoteNumber = (frequency: number) => {
   // m = 12*log2(fm/440 Hz) + 69
   return Math.round(12 * Math.log2(frequency / A_440) + A_440_MIDI_NOTE_NUMBER);
 };
-export const midiNoteNumberToFrequency = (midiNoteNumber) => {
+export const midiNoteNumberToFrequency = (midiNoteNumber: number) => {
   // fm = 2(m−69)/12(440 Hz)
   return 2 ** ((midiNoteNumber - A_440_MIDI_NOTE_NUMBER) / 12) * A_440;
 };

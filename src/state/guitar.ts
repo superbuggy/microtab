@@ -1,7 +1,9 @@
+import type { GuitarTuning, PitchName, StringNumber, Note } from './../definitions/types';
 import { watch, ref, computed } from "vue";
 import { useScales } from "../definitions/scales";
 import { useTemperament } from "./temperament";
 import { useTuning } from "./tuning";
+import { SupportedEDOs } from "../definitions/types";
 const { TUNING } = useTuning();
 
 const { scaleNames, scalesFor } = useScales();
@@ -15,7 +17,7 @@ const stringQuantity = ref(DEFAULT_STRING_QUANTITY);
 const stringNumbers = Array.from({ length: stringQuantity.value }).map(
   (_, index, { length }) => length - index
 );
-const tuning = ref(
+const tuning = ref<GuitarTuning>(
   Object.fromEntries(
     stringNumbers.map((stringNumber, index) => [
       `string${stringNumber}`,
@@ -24,7 +26,7 @@ const tuning = ref(
   )
 );
 const startingFromFret = ref(0);
-const lowestNote = tuning.value[`string${stringNumbers[0]}`];
+const lowestNote: PitchName = tuning.value[`string${stringNumbers[0]}`];
 const scales = ref(scalesFor(lowestNote.replace(/\d/, "")));
 const selectedScaleName = ref("Ionian");
 
@@ -36,20 +38,22 @@ const defaultScalesPerTet = {
   24: "Ionian",
 };
 
-watch(divisionsPerOctave, (perOctave) => {
+watch(divisionsPerOctave, (perOctave: SupportedEDOs) => {
   selectedScaleName.value = defaultScalesPerTet[perOctave];
   scales.value = scalesFor(lowestNote.replace(/\d/, ""));
 });
 
-const notesPerString = ref(3);
+const notesPerString = ref<number | null>(3);
+
+type FretNote = { note: Note; fretNumber: number };
 
 export function useGuitar() {
-  const initializedGuitarNotes = () =>
+  const initializedGuitarNotes = (): Record<StringNumber, FretNote[]> =>
     Object.fromEntries(
       stringNumbers.map((stringNumber) => [`string${stringNumber}`, []])
     );
 
-  const scaleForGuitar = (startingNoteNameIndex, endingNoteNameIndex) => {
+  const scaleForGuitar = (startingNoteNameIndex: number, endingNoteNameIndex: number) => {
     return selectedScale.value.notes
       .filter(
         (note) =>
@@ -85,24 +89,24 @@ export function useGuitar() {
   //     }, {});
   // };
 
-  const selectNotesPerString = (perString) => {
+  const selectNotesPerString = (perString: string) => {
     notesPerString.value = perString === "All" ? null : Number(perString);
   };
 
-  const selectScale = (scaleName) => {
+  const selectScale = (scaleName: string) => {
     selectedScaleName.value = scaleName;
   };
 
   const fretboardScale = computed(() => {
     const guitar = initializedGuitarNotes();
-    for (const stringName in guitar) {
-      const startingNoteOnString = tuning.value[stringName];
+    for (const stringNumber in guitar) {
+      const startingNoteOnString = tuning.value[stringNumber as StringNumber];
       let offset = distanceBetweenNotes(lowestNote, startingNoteOnString);
-      const previousStringName = stringName.replace(/\d/, (n) => +n + 1);
+      const previousStringNumber = stringNumber.replace(/\d/, (n) => `${+n + 1}`) as StringNumber;
 
-      let distanceBetweenStrings = guitar[previousStringName]
+      let distanceBetweenStrings = guitar[previousStringNumber]
         ? distanceBetweenNotes(
-            tuning.value[previousStringName],
+            tuning.value[previousStringNumber as StringNumber],
             startingNoteOnString
           )
         : 0;
@@ -112,14 +116,19 @@ export function useGuitar() {
           fretNumber: fretNumber + startingFromFret.value,
         })
       );
-      guitar[stringName] = notesPerString.value
+
+      guitar[stringNumber as StringNumber] = notesPerString.value
         ? stringScale
             .filter(({ fretNumber }) => {
-              if (!guitar[previousStringName]) return true;
+              if (!guitar[previousStringNumber]) return true;
+              // if (!guitar[previousStringNumber].at(-1)) return false;
+              // if (!guitar[previousStringNumber].at(-1)?.fretNumber) return false;
               if (notesPerString.value) {
+                const lastNoteOnPriorString = guitar[previousStringNumber].at(-1);
+                if (!lastNoteOnPriorString) return false;
                 return (
-                  guitar[previousStringName].at(-1).fretNumber <
-                  fretNumber + distanceBetweenStrings
+                  // UGH
+                  lastNoteOnPriorString.fretNumber < (fretNumber + distanceBetweenStrings)
                 );
               }
             })

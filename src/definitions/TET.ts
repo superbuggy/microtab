@@ -1,12 +1,15 @@
+import type { TetSchema } from './types';
 import { Temperament } from "temperament";
+import type { PitchClass, PitchName } from './types';
 
 export class TET extends Temperament {
-  constructor(temperamentData) {
+  constructor(temperamentData: TetSchema) {
     super(temperamentData);
   }
 
-  get pitchClassNames() {
-    return super.noteNames;
+  get pitchClassNames(): PitchClass[] {
+    // TODO: Is this typing correct?
+    return super.noteNames as PitchClass[];
   }
 
   get pitchNames() {
@@ -14,9 +17,9 @@ export class TET extends Temperament {
       .map((_, octaveNumber) => octaveNumber)
       .flatMap((octaveNumber) =>
         this.pitchClassNames.map(
-          (pitchClassName) => pitchClassName + octaveNumber
+          (pitchClassName: PitchClass) => `${pitchClassName}${octaveNumber}` as PitchName
         )
-      );
+      ) as PitchName[];
   }
 
   get stepSize() {
@@ -24,16 +27,21 @@ export class TET extends Temperament {
     return null;
   }
 
-  frequencyFor(pitchName) {
-    const [, pitchClass, octave] = pitchName.match(/([^0-9]+)(\d)/);
-    return super.getPitch(pitchClass, octave);
+  frequencyFor(pitchName: PitchName) {
+    const match = pitchName.match(/([^0-9]+)(\d)/);
+    if (!match) {
+      throw new Error(`Malformed pitch name: ${pitchName}`);
+    }
+    const [, pitchClass, octave] = match;
+    return super.getPitch(pitchClass, Number(octave));
   }
 
-  noteFromStepsAbove(referenceNoteName, stepsAbove) {
+  noteFromStepsAbove(referenceNoteName: string, stepsAbove: number) {
     const referenceNoteNameIndex = this.pitchNames.findIndex(
       (matchedNoteName) => matchedNoteName === referenceNoteName
     );
-    if (referenceNoteName === -1)
+
+    if (referenceNoteNameIndex === -1)
       throw new Error(
         "Note not found" + stepsAbove + " steps above " + referenceNoteName
       );
@@ -46,17 +54,29 @@ export class TET extends Temperament {
 
     return foundNote;
   }
-  distanceBetweenNotes(lowerNote, higherNote) {
+  distanceBetweenNotes(lowerNoteName: PitchName, higherNoteName: PitchName) {
     return (
-      this.pitchNames.indexOf(higherNote) - this.pitchNames.indexOf(lowerNote)
+      this.pitchNames.indexOf(higherNoteName) - this.pitchNames.indexOf(lowerNoteName)
     );
   }
 }
 
-export function noteInTET(temperament) {
+function parsePitchName(pitchName: PitchName) {
+  const match = pitchName.match(/([^0-9]+)(\d)/);
+  if (!match) {
+    throw new Error(`Malformed pitch name: ${pitchName}`);
+  }
+  const [, pitchClass, octave] = match as [string, PitchClass, string];
+  return { pitchClass, octave: Number(octave) };
+}
+
+export function noteInTET(temperament: TET) {
   return class Note {
-    constructor(pitchName) {
-      const [, pitchClass, octave] = pitchName.match(/([^0-9]+)(\d)/);
+    pitch: PitchName;
+    pitchClass: PitchClass;
+    octave: number;
+    constructor(pitchName: PitchName) {
+      const { pitchClass, octave } = parsePitchName(pitchName);
 
       if (temperament.noteNames.indexOf(pitchClass) === -1) {
         throw new Error(
@@ -77,9 +97,7 @@ export function noteInTET(temperament) {
     }
 
     get absolutePitchNumber() {
-      return temperament.pitchNames.findIndex(
-        (pitchName) => pitchName === this.pitch
-      );
+      return (temperament.pitchNames).findIndex((pitchName: PitchName) => pitchName === this.pitch);
     }
 
     get pitchClassNumber() {

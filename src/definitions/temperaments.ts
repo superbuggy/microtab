@@ -1,7 +1,9 @@
 import { useTuning } from "../state/tuning";
 const { TUNING } = useTuning();
-import pitchMap from './12-tet-pitch-frequencies.json'
+import pitchMapJson from './12-tet-pitch-frequencies.json'
+import type { PitchMap, TetSchema } from "./types";
 
+const pitchMap: PitchMap = pitchMapJson;
 
 // TODO: convert to ref
 const referencePitch = pitchMap[TUNING.value[0]];
@@ -11,7 +13,7 @@ const referenceName = TUNING.value[0].replace(/\d/g, "");
 
 
 // TODO: convert to tet-builder functions that take name and pitch as args
-export const tet12schema = {
+export const tet12schema: TetSchema = {
   name: "12 TET",
   description: "Standard 12-tone equal temperament.",
   source: "https://en.wikipedia.org/wiki/12_equal_temperament",
@@ -35,7 +37,7 @@ export const tet12schema = {
   },
 };
 
-export const tet24schema = {
+export const tet24schema: TetSchema = {
   name: "24 TET",
   description: "Standard 24-tone equal temperament.",
   source: "https://en.wikipedia.org/wiki/Quarter_tone#Quarter-tone_scale",
@@ -71,7 +73,7 @@ export const tet24schema = {
   },
 };
 
-export const tet16schema = {
+export const tet16schema: TetSchema = {
   name: "16 TET",
   description: "Standard 16-tone equal temperament.",
   source: "https://en.xen.wiki/w/16edo",
@@ -101,7 +103,7 @@ export const tet16schema = {
 
 // TODO: Support enharmonicity
 
-export const tet17schema = {
+export const tet17schema: TetSchema = {
   name: "17 TET",
   description: "Standard 17-tone equal temperament.",
   source: "https://en.xen.wiki/w/17edo",
