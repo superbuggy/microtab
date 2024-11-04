@@ -5,10 +5,11 @@ import { scalarIntervallicDistances16EDO } from "./16-tet-scalar-intervals";
 import { scalarIntervallicDistances17EDO } from "./17-tet-scalar-intervals";
 import { scalarIntervallicDistances24EDO } from "./24-tet-scalar-intervals";
 import { sum } from "../helpers";
+import { PitchClass } from "./types";
 
 const { chosenTemperamentName, notes, noteNames, pitchClassNames } =
   useTemperament();
-const intervallicDistancesForTemperaments = {
+const intervallicDistancesForTemperaments: Record<string, Record<string, number[]>> = {
   // "12 TET": scalarIntervallicDistances12EDO,
   "16 TET": scalarIntervallicDistances16EDO,
   "17 TET": scalarIntervallicDistances17EDO,
@@ -21,7 +22,7 @@ const scaleNames = computed(() =>
   Object.keys(intervallicDistancesForChosenTemperament.value)
 );
 
-const scalesFor = (rootNoteName) => {
+const scalesFor = (rootNoteName: PitchClass) => {
   console.log(
     chosenTemperamentName.value,
     intervallicDistancesForChosenTemperament.value
@@ -54,7 +55,7 @@ export function useScales() {
 }
 
 // TODO: This may leave out notes below the rootNote on the list of absolute pitches
-function* scale(intervals, rootNoteName) {
+function* scale(intervals: number[], rootNoteName: PitchClass) {
   const startingNoteNameIndex = pitchClassNames.value.indexOf(rootNoteName);
   const endingNoteNameIndex = notes.value.length - 1;
   let pitchCount = 0;
@@ -67,10 +68,10 @@ function* scale(intervals, rootNoteName) {
   }
 }
 
-function pitchClassNumbersFromIntervallicDistances(intervals, rootNoteName) {
+function pitchClassNumbersFromIntervallicDistances(intervals: number[], rootNoteName: PitchClass) {
   return intervals.reduce(
     (builtScale, intervallicDistance) => {
-      builtScale.push(intervallicDistance + builtScale.at(-1));
+      builtScale.push(intervallicDistance + (builtScale.at(-1) as number));
       return builtScale;
     },
     [rootNoteName ? pitchClassNames.value.indexOf(rootNoteName) : 0]
