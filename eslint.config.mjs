@@ -1,4 +1,4 @@
- //@ts-check
+//@ts-check
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import pluginVue from 'eslint-plugin-vue';
@@ -26,9 +26,7 @@ export default tseslint.config(
   },
   {
     rules: {
-      rules: {
-        "@typescript-eslint/no-explicit-any": null
-      }
+      "@typescript-eslint/no-explicit-any": "off"
     }
   }
 );
