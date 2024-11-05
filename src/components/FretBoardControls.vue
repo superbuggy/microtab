@@ -1,6 +1,6 @@
 <template>
   <section>
-    <select name="" id="" @input="selectScale($event.target.value)">
+    <select @input="selectScale(($event.target as HTMLSelectElement).value)">
       <option
         v-for="scaleName in scaleNames"
         :key="scaleName"
@@ -10,7 +10,7 @@
         {{ scaleName }}
       </option>
     </select>
-    <select @change="selectNotesPerString($event.target.value)">
+    <select @change="selectNotesPerString(($event.target as HTMLSelectElement).value)">
       <option
         v-for="notesPerStringSelection in ['All', 3, 4, 5]"
         :key="notesPerStringSelection"
@@ -24,39 +24,62 @@
         }}
       </option>
     </select>
-    <input type="number" name="" id="" v-model="startingFromFret" />
+    <input
+      id=""
+      v-model="startingFromFret"
+      type="number"
+      name=""
+    >
   </section>
   <section>
-    <button v-if="!isPlayingSequence" @click="playScale">Play Scale</button>
-    <button v-else @click="stopPlayingScale">Stop Playing</button>
+    <button
+      v-if="!isPlayingSequence"
+      @click="playScale"
+    >
+      Play Scale
+    </button>
+    <button
+      v-else
+      @click="stopPlayingScale"
+    >
+      Stop Playing
+    </button>
     <label for="tempo">
       <span>{{ tempo }}</span> BPM
-      <input type="range" min="30" max="180" :value="tempo" @input="changeTempo" />
+      <input
+        type="range"
+        min="30"
+        max="180"
+        :value="tempo"
+        @input="changeTempo"
+      >
     </label>
     <label for="loop">
       Loop?
-      <input type="checkbox" v-model="isLooped" />
+      <input
+        v-model="isLooped"
+        type="checkbox"
+      >
     </label>
   </section>
   <section>
     <label for="">
       12Tet guides
-      <input type="checkbox" v-model="shouldShow12TETFrets" />
-    </label>
-    <label for="" v-if="shouldShow12TETFrets">
-      Invert fret colors
-      <input type="checkbox" v-model="areFretColorsInverted" />
+      <input
+        v-model="shouldShow12TETFrets"
+        type="checkbox"
+      >
     </label>
   </section>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { useGuitar } from "../state/guitar";
 import { useTone } from "../effects/tone";
 import { useFretBoardControls } from "../state/fretboard-controls";
 import { ref } from "vue";
 
-const { shouldShow12TETFrets, areFretColorsInverted } = useFretBoardControls();
+const { shouldShow12TETFrets } = useFretBoardControls();
 
 // import * as Tone from "tone";
 

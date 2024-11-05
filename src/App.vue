@@ -1,8 +1,7 @@
-<script setup>
+<script setup lang="ts">
 import { RouterView } from "vue-router";
 </script>
 
 <template>
-  <h1>microtab</h1>
   <RouterView />
 </template>

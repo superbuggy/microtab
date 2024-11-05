@@ -1,4 +1,4 @@
-export const scalarIntervallicDistances24EDO = {
+export const scalarIntervallicDistances24EDO: Record<string, number[]> = {
   semaphore5: [5, 5, 4, 5, 5],
   semaphore9: [4, 1, 4, 1, 4, 4, 1, 4, 1],
   maqamic7: [3, 4, 3, 3, 4, 3, 4],
@@ -126,17 +126,17 @@ export const scalarIntervallicDistances24EDO = {
   Locrian: [2, 4, 4, 2, 4, 4, 4],
 };
 
-const intervallicDistances = (pitchNumbers) =>
+const intervallicDistances = (pitchNumbers: number[]) =>
   pitchNumbers.slice(1).reduce((intervals, pitchNumber, index) => {
     intervals.push(pitchNumber - pitchNumbers[index]);
     return intervals;
-  }, []);
+  }, [] as number[]);
 
 // const compareCentsForEDO = (centsValues, edo) =>
 //   centsValues.map((i) => Math.round(i / (1200 / edo)) * (1200 / edo) - i);
 
-const centsToEDO = (centsValues, edo) =>
-  centsValues.map((i) => Math.round(i / (1200 / edo)));
+const centsToEDO = (centsValues: number[], edo: number) =>
+  centsValues.map((i: number) => Math.round(i / (1200 / edo)));
 
 const approxBohlenPierceCents = [
   0, 133.2, 301.8, 435.1, 582.5, 736.9, 884.4, 1017.0, 1165.0, 1319.4, 1466.9,

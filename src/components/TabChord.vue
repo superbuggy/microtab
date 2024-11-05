@@ -1,22 +1,22 @@
-<script setup>
+<script setup lang="ts">
 import { range } from "../helpers";
 import { reactive, ref, computed, watch, nextTick } from "vue";
 import { useGuitar } from "../state/guitar";
 import { useTemperament } from "../state/temperament";
 import { useChords } from "../state/chord";
 import { remPixels, isEven } from "../helpers";
+import type { GuitarChord, StringNumber } from "../definitions/types";
 
 const { updateChord } = useChords();
 
 const { stringQuantity, stringNumbers } = useGuitar();
 const { divisionsPerOctave } = useTemperament();
-const props = defineProps({
-  // id: String,
-  chord: Object,
-});
+const props = defineProps<{
+  chord: GuitarChord;
+}>();
 
 const tabChord = reactive({ ...props.chord });
-const startingFretInput = ref(null);
+const startingFretInput = ref<null | HTMLInputElement>(null);
 const VIEWBOX_X_MAX = 600;
 const VIEWBOX_Y_MAX = 600;
 const REACHABLE_FRETS_PERCENTAGE = 5 / 12;
@@ -28,7 +28,7 @@ const lowestChordNote = () => {
   const min = Math.min(
     ...Object.entries(tabChord)
       .filter(([k, v]) => k !== "id" && v !== null)
-      .map(([, v]) => v)
+      .map(([, v]) => v as number)
   );
   return min === Infinity ? 0 : min;
 };
@@ -36,7 +36,7 @@ const isInEditMode = ref(false);
 
 watch(isInEditMode, async () => {
   await nextTick();
-  if (isInEditMode.value) startingFretInput.value.focus();
+  if (isInEditMode.value) startingFretInput.value?.focus();
 });
 
 const startingFret = ref(lowestChordNote());
@@ -55,7 +55,7 @@ const fontSize = remPixels() * 2.5;
 const textOffsetX = 0.75 * fontSize;
 const textOffsetY = 0.33 * fontSize;
 
-function toggleNote(string, fret) {
+function toggleNote(string: StringNumber, fret: number) {
   tabChord[string] = tabChord[string] !== fret ? fret : null;
   updateChord(tabChord);
 }
@@ -64,35 +64,44 @@ function toggleNote(string, fret) {
 <template>
   <svg :viewBox="`0 0 ${VIEWBOX_X_MAX} ${VIEWBOX_Y_MAX}`">
     <text
+      v-if="!isInEditMode"
       :x="x - textOffsetX"
       :y="y + textOffsetY"
       :font-size="fontSize"
       @click="isInEditMode = !isInEditMode"
-      v-if="!isInEditMode"
     >
       {{ startingFret }}
     </text>
     <foreignObject
+      v-else
       :x="x - 2 * textOffsetX"
       :y="y - 2 * textOffsetY"
       :height="fontSize * 2"
       :width="fontSize * 3"
-      v-else
     >
       <input
+        ref="startingFretInput"
+        v-model.number="startingFret"
         xmlns="http://www.w3.org/1999/xhtml"
         type="number"
         min="0"
-        ref="startingFretInput"
-        v-model.number="startingFret"
         @keydown.enter="
           isInEditMode = !isInEditMode;
           startingFret = startingFret || 0;
         "
-      />
+      >
     </foreignObject>
-    <rect :x="x" :y="y" :width="width" :height="height" class="tab" />
-    <g v-for="(fret, index) in reachableFrets.slice(0, -1)" :key="fret">
+    <rect
+      :x="x"
+      :y="y"
+      :width="width"
+      :height="height"
+      class="tab"
+    />
+    <g
+      v-for="(fret, index) in reachableFrets.slice(0, -1)"
+      :key="fret"
+    >
       <rect
         v-if="isEven(fret)"
         :key="fret"
@@ -109,10 +118,13 @@ function toggleNote(string, fret) {
         :y2="index * fretSpacing + y"
       />
     </g>
-    <g v-for="(fret, index) in reachableFrets" :key="fret">
+    <g
+      v-for="(fret, index) in reachableFrets"
+      :key="fret"
+    >
       <circle
-        class="fret-dot"
         v-if="fretDots.includes(fret)"
+        class="fret-dot"
         :cy="index * fretSpacing + y"
         :cx="width"
         :r="stringSpacing / 2.5"
@@ -131,23 +143,30 @@ function toggleNote(string, fret) {
       :x2="string * stringSpacing + x"
       :y2="y + height"
     />
-    <g v-for="(fret, fretIndex) in reachableFrets" :key="fret">
+    <g
+      v-for="(fret, fretIndex) in reachableFrets"
+      :key="fret"
+    >
       <circle
         v-for="(string, index) in stringNumbers"
-        class="fret"
         :key="string"
+        class="fret"
         :cy="fretIndex * fretSpacing + y"
         :cx="index * stringSpacing + x"
         :r="stringSpacing / 5"
-        @click="toggleNote(`string${string}`, startingFret + fret)"
         :class="{
           active: tabChord[`string${string}`] === startingFret + fret,
         }"
+        @click="toggleNote(`string${string}`, startingFret + fret)"
       >
         <title>{{ fret }}</title>
       </circle>
     </g>
-    <text :x="x - textOffsetX" :y="y + height + textOffsetY" :font-size="fontSize">
+    <text
+      :x="x - textOffsetX"
+      :y="y + height + textOffsetY"
+      :font-size="fontSize"
+    >
       {{ endingFret }}
     </text>
   </svg>

@@ -1,7 +1,8 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from "vue";
 import TabChord from "../components/TabChord.vue";
 import FretBoard from "../components/FretBoard.vue";
+import PitchDetector from "../components/PitchDetector.vue";
 import ArrowIcon from "../components/icons/ArrowIcon.vue";
 // import PencilIcon from "../components/icons/PencilIcon.vue";
 import PlusIcon from "../components/icons/PlusIcon.vue";
@@ -14,7 +15,7 @@ import { useTemperament } from "../state/temperament";
 const { chooseTemperament, chosenTemperamentName, temperamentNames } = useTemperament();
 const { chords, playChords, addChord, removeChord } = useChords();
 const isUploadInputShown = ref(false);
-const uploader = ref(null);
+const uploader = ref<HTMLInputElement | null>(null);
 
 function save() {
   const json = JSON.stringify(chords.value);
@@ -31,12 +32,13 @@ function save() {
 const filerReader = new FileReader();
 filerReader.onload = receivedText;
 function load() {
-  const file = uploader.value.files[0];
-  filerReader.readAsText(file);
+  const file = uploader.value?.files?.[0];
+  filerReader.readAsText(file as Blob);
 }
-function receivedText(e) {
-  let lines = e.target.result;
-  chords.value = JSON.parse(lines);
+function receivedText(e: Event) {
+  const target = e.target as FileReader;
+  const lines = target.result;
+  chords.value = JSON.parse(lines as string);
   uploader.value = null;
   isUploadInputShown.value = false;
 }
@@ -44,7 +46,7 @@ function receivedText(e) {
 </script>
 
 <template>
-  <select @change="chooseTemperament($event.target.value)">
+  <select @change="chooseTemperament(($event.target as HTMLSelectElement).value)">
     <option
       v-for="temperamentName in temperamentNames"
       :key="temperamentName"
@@ -54,10 +56,15 @@ function receivedText(e) {
       {{ temperamentName }}
     </option>
   </select>
-  <fret-board />
+  <FretBoard />
+  <PitchDetector />
   <main>
-    <div v-for="chord in chords" :key="chord.id" class="chord-container">
-      <tab-chord :chord="chord" />
+    <div
+      v-for="chord in chords"
+      :key="chord.id"
+      class="chord-container"
+    >
+      <TabChord :chord="chord" />
       <div class="icons">
         <!-- <PencilIcon /> -->
         <TrashIcon @click="removeChord(chord.id)" />
@@ -74,7 +81,12 @@ function receivedText(e) {
       <UploadIcon />
     </span>
   </div>
-  <input type="file" ref="uploader" v-if="isUploadInputShown" @change="load" />
+  <input
+    v-if="isUploadInputShown"
+    ref="uploader"
+    type="file"
+    @change="load"
+  >
 </template>
 
 <style scoped lang="scss">

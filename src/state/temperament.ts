@@ -62,7 +62,7 @@ const notesFor = (octavalDivisions: number) => {
     (pitchName) => new TETNote(pitchName)
   );
 };
-const notesDictionaryFor = (octavalDivisions: number) => {
+const notesDictionaryFor = (octavalDivisions: number): Record<string, any> => {
   return notesFor(octavalDivisions).reduce(
     (dictionary, note) => setKeyIn(dictionary, note.pitch, note),
     {}
@@ -70,9 +70,9 @@ const notesDictionaryFor = (octavalDivisions: number) => {
 };
 
 // For debugging purposes
-// @ts-ignore
+// @ts-expect-error - no property on window
 window.chosenTemperament = chosenTemperament.value;
-// @ts-ignore
+// @ts-expect-error - no property on window
 window.Note = Note.value;
 
 const divisionsPerOctave = computed(

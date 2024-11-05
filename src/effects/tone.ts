@@ -15,7 +15,7 @@ export function useTone() {
     tempo.value = Number(target?.value);
     Tone.getTransport().bpm.value = Number(tempo.value);
   }
-  function playNoteSequence(notesFrequenciesToPlay: number[], onEnd: () => void) {
+  function playNoteSequence(notesFrequenciesToPlay: {time: number, note: number[] | string }[], onEnd: () => void) {
     stopPlayback();
     Tone.Transport.start();
     // Tone.start();

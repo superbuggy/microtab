@@ -54,9 +54,9 @@ export const euclideanPattern = (pulses: number, steps: number) => {
     return [];
   }
 
-  let pattern: number[] = [];
-  let counts: number[] = [];
-  let remainders: number[] = [];
+  const pattern: number[] = [];
+  const counts: number[] = [];
+  const remainders: number[] = [];
   let divisor = steps - pulses;
   remainders.push(pulses);
   let level = 0;
@@ -79,7 +79,7 @@ export const euclideanPattern = (pulses: number, steps: number) => {
     return function build(level: number) {
       repetition += 1;
       if (level > -1) {
-        for (var i = 0; i < counts[level]; i++) {
+        for (let i = 0; i < counts[level]; i++) {
           build(level - 1);
         }
         if (remainders[level] !== 0) {
@@ -99,7 +99,7 @@ export const euclideanPattern = (pulses: number, steps: number) => {
 
 export const rotate = (array: any[], times = 0) => {
   if (!array.length) return [];
-  let rotatedArray = array.slice();
+  const rotatedArray = array.slice();
   let count = 0;
   while (count < times) {
     rotatedArray.push(rotatedArray.shift()); //rotate left
@@ -128,7 +128,7 @@ export const midiNoteNumberToPitchName = (
   const includedAccidental = shouldPreferSharps ? "#" : "b";
   const octave = Math.floor(midiNoteNumber / 12);
   const pitchClassNumber = midiNoteNumber % 12;
-  const isNatural = (pitchClassName: string) => !pitchClassName.match(/[b#]/);
+  const isNatural = (pitchClassName: string) => !pitchClassName.match(/[b#+-]/);
   return (
     Object.fromEntries(
       Object.entries(pitchClassNumbers12TET)

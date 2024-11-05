@@ -3,7 +3,7 @@ import { watch, ref, computed } from "vue";
 import { useScales } from "../definitions/scales";
 import { useTemperament } from "./temperament";
 import { useTuning } from "./tuning";
-import { SupportedEDOs } from "../definitions/types";
+import { SupportedEDOs, PitchClass } from "../definitions/types";
 const { TUNING } = useTuning();
 
 const { scaleNames, scalesFor } = useScales();
@@ -27,7 +27,7 @@ const tuning = ref<GuitarTuning>(
 );
 const startingFromFret = ref(0);
 const lowestNote: PitchName = tuning.value[`string${stringNumbers[0]}`];
-const scales = ref(scalesFor(lowestNote.replace(/\d/, "")));
+const scales = ref(scalesFor(lowestNote.replace(/\d/, "") as PitchClass));
 const selectedScaleName = ref("Ionian");
 
 const selectedScale = computed(() => scales.value[selectedScaleName.value]);
@@ -40,7 +40,7 @@ const defaultScalesPerTet = {
 
 watch(divisionsPerOctave, (perOctave: SupportedEDOs) => {
   selectedScaleName.value = defaultScalesPerTet[perOctave];
-  scales.value = scalesFor(lowestNote.replace(/\d/, ""));
+  scales.value = scalesFor(lowestNote.replace(/\d/, "") as PitchClass);
 });
 
 const notesPerString = ref<number | null>(3);
@@ -101,10 +101,10 @@ export function useGuitar() {
     const guitar = initializedGuitarNotes();
     for (const stringNumber in guitar) {
       const startingNoteOnString = tuning.value[stringNumber as StringNumber];
-      let offset = distanceBetweenNotes(lowestNote, startingNoteOnString);
+      const offset = distanceBetweenNotes(lowestNote, startingNoteOnString);
       const previousStringNumber = stringNumber.replace(/\d/, (n) => `${+n + 1}`) as StringNumber;
 
-      let distanceBetweenStrings = guitar[previousStringNumber]
+      const distanceBetweenStrings = guitar[previousStringNumber]
         ? distanceBetweenNotes(
             tuning.value[previousStringNumber as StringNumber],
             startingNoteOnString

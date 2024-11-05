@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import FretBoardControls from "./FretBoardControls.vue";
 import PopOver from "./PopOver.vue";
 
@@ -44,19 +44,19 @@ const y = VIEWBOX_Y_MAX / 8;
 const width = VIEWBOX_X_MAX / 2;
 const fretboardHeight = VIEWBOX_Y_MAX / 2;
 
-const popUpX = ref(null);
-const popUpY = ref(null);
-const popUpNote = ref(null);
+const popUpX = ref<number>(NaN);
+const popUpY = ref<number>(NaN);
+const popUpNote = ref<{pitch: string, } | null>(null);
 
 const SCALE_LENGTH = 25.5;
 
-const stringEnergy = (stringRootFrequency) => 2 * SCALE_LENGTH * stringRootFrequency;
+const stringEnergy = (stringRootFrequency: number) => 2 * SCALE_LENGTH * stringRootFrequency;
 // Frequency = 1 / 2L * stringEnergy //sqrt(T/m)
 // From a note frequency for a string, find the position on the string for that note frequency
-const distanceForFrequency = (stringRootFrequency, noteFrequency) =>
+const distanceForFrequency = (stringRootFrequency: number, noteFrequency: number) =>
   stringEnergy(stringRootFrequency) / (noteFrequency * 2);
 
-const stringY = (stringRootFrequency, noteFrequency) =>
+const stringY = (stringRootFrequency: number, noteFrequency: number) =>
   // whyyyyy
   1.775 *
   (fretboardHeight -
@@ -68,12 +68,12 @@ const stringY = (stringRootFrequency, noteFrequency) =>
       fretboardHeight
     ));
 
-const stringNotes = computed(() => {
+const stringNotes = computed((): Record<string, Record<string, any>> => {
   const guideLineDivisions = shouldShow12TETFrets.value ? 12 : divisionsPerOctave.value;
   const dict = notesDictionaryFor(guideLineDivisions);
   const stringRootFrequencies = objectMap(
     tuning.value,
-    (string, pitchName) => dict[pitchName].frequency
+    (_, pitchName) => dict[pitchName].frequency
   );
   console.log(stringRootFrequencies);
   const notesWithDistances = objectMap(stringRootFrequencies, (string, rootFrequency) =>
@@ -88,8 +88,6 @@ const stringNotes = computed(() => {
   console.log(notesWithDistances);
   return notesWithDistances;
 });
-
-console.log(stringNotes.value);
 
 // Assumes an equal step temperament
 const fretDistancesFromNut = (divisions = divisionsPerOctave.value) => {
@@ -113,6 +111,8 @@ const reachableFrets = computed(() =>
   shouldShow12TETFrets.value ? range(0, 24) : range(startingFret, endingFret.value)
 );
 const fretDistances = computed(() =>
+// TODO: Fix this
+   //@ts-expect-error - Argument of type '12 | SupportedEDOs' is not assignable to parameter of type 'SupportedEDOs | undefined'.
   fretDistancesFromNut(shouldShow12TETFrets.value ? 12 : divisionsPerOctave.value)
 );
 const fretSpacing = computed(() => fretDistances.value.slice(1));
@@ -120,22 +120,20 @@ const fretHeights = computed(() =>
   fretSpacing.value.reduce((distances, length, index) => {
     distances.push(length - fretDistances.value[index]);
     return distances;
-  }, [])
+  }, [] as number[])
 );
 
-function handleHover(event, note) {
-  popUpX.value = Number(event.target.attributes.cx.value);
-  popUpY.value = Number(event.target.attributes.cy.value);
+function handleHover(event: Event, note: {pitch: string}) {
+  const target = event.target as SVGElement;
+  popUpX.value = Number(target.getAttribute('cx'));
+  popUpY.value = Number(target.getAttribute('cy'));
   popUpNote.value = note;
-  console.log(popUpX.value);
-  console.log(popUpY.value);
-  console.log(popUpNote.value);
 }
 
 function resetPopUp() {
   popUpNote.value = null;
-  popUpX.value = null;
-  popUpY.value = null;
+  popUpX.value = NaN;
+  popUpY.value = NaN;
 }
 
 const fretDots = computed(() =>
@@ -153,11 +151,11 @@ const fretDots = computed(() =>
 //               ? (fretSpacing[fretDot - 1] + fretSpacing[fretDot - 2]) / 2 + y
 //               : fretSpacing[fretDot - 1] + y
 
-const hue = (degree, upperBound) => (360 * degree) / upperBound;
-const hsl = (degree, upperBound, l = 75) =>
+const hue = (degree: number, upperBound: number) => (360 * degree) / upperBound;
+const hsl = (degree: number, upperBound: number, l = 75) =>
   `hsl(${hue(degree, upperBound)}, 100%, ${l}%)`;
 
-const hslForNote = (note, l = 50) => {
+const hslForNote = (note: { pitchClassNumber: number }, l = 50) => {
   // if (!note) return;
   const degree = selectedScale.value.pitchClassNumbers
     .map((pitchClassNumber) => pitchClassNumber % selectedScale.value.period)
@@ -189,8 +187,7 @@ const textOffsetY = fontSize;
         12
       )};`"
     >
-      {{ noteName }}&nbsp;</span
-    >
+      {{ noteName }}&nbsp;</span>
   </div>
   <div class="svg-container">
     <svg
@@ -216,10 +213,19 @@ const textOffsetY = fontSize;
       >
         {{ endingFret }}
       </text>
-      <rect :x="x" :y="y" :width="width" :height="fretboardHeight" class="tab" />
+      <rect
+        :x="x"
+        :y="y"
+        :width="width"
+        :height="fretboardHeight"
+        class="tab"
+      />
 
       <g class="frets-group">
-        <g v-for="fret in reachableFrets" :key="fret">
+        <g
+          v-for="fret in reachableFrets"
+          :key="fret"
+        >
           <rect
             v-if="divisionsPerOctave === 24 && isOdd(fret + 1)"
             :key="fret"
@@ -231,8 +237,8 @@ const textOffsetY = fontSize;
           />
           <line
             v-if="fretSpacing[fret]"
-            class="fret"
             :key="fret"
+            class="fret"
             :x1="x"
             :y1="fretSpacing[fret] + y"
             :x2="x + width"
@@ -242,8 +248,8 @@ const textOffsetY = fontSize;
         <g v-if="shouldShow12TETFrets">
           <line
             v-for="fret in reachableFrets"
-            class="tet-12-overlay fret"
             :key="fret"
+            class="tet-12-overlay fret"
             :x1="x"
             :y1="fretSpacing[fret] + y"
             :x2="x + width"
@@ -263,7 +269,10 @@ const textOffsetY = fontSize;
         />
       </g>
       <g class="fret-dots-group">
-        <g v-for="fretDot in fretDots" :key="fretDot">
+        <g
+          v-for="fretDot in fretDots"
+          :key="fretDot"
+        >
           <circle
             :cx="
               fretDot % (shouldShow12TETFrets ? 12 : divisionsPerOctave) === 0
@@ -294,28 +303,37 @@ const textOffsetY = fontSize;
         </g>
       </g>
       <g class="fretted-notes-group">
-        <g v-for="fret in reachableFrets" :key="fret">
-          <g v-for="(string, index) in Object.keys(stringNotes)" :key="string">
+        <g
+          v-for="fret in reachableFrets"
+          :key="fret"
+        >
+          <g
+            v-for="(string, index) in Object.keys(stringNotes)"
+            :key="string"
+          >
             <circle
-              @mouseover="handleHover($event, note)"
-              @mouseout="resetPopUp"
               v-for="{ note, fretNumber, noteY } in stringNotes[string]"
+              :id="`note-${note.frequency}-hz`"
               :key="`${string}-${fretNumber}`"
               class="fretted-note active"
               :cx="index * stringSpacing + x"
               :cy="noteY + y"
               :r="Math.min(stringSpacing / 5)"
               :fill="hslForNote(note)"
-              @click="playNote(note.frequency)"
-              :id="`note-${note.frequency}-hz`"
               stroke-width="4"
+              @mouseover="handleHover($event, note)"
+              @mouseout="resetPopUp"
+              @click="playNote(note.frequency)"
             >
               <title>{{ fretNumber }}</title>
             </circle>
           </g>
         </g>
       </g>
-      <PopOver :x="popUpX" :y="popUpY">
+      <PopOver
+        :x="popUpX"
+        :y="popUpY"
+      >
         <p v-if="popUpNote">Frequency: {{ popUpNote.pitch }}</p>
       </PopOver>
     </svg>

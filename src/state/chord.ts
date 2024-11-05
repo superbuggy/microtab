@@ -46,7 +46,7 @@ export function useChords() {
   function chordNotes(chord: GuitarChord) {
     return Object.entries(chord)
       .filter(([key, fret]) => key !== "id" && fret !== null)
-      .map(([stringName, fret]: [string, string | number]) =>
+      .map(([stringName, fret]: [string, string | number | null]) =>
         noteFromStepsAbove(tuning.value[stringName as StringNumber], Number(fret))
       );
   }
