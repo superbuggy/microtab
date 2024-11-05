@@ -3,15 +3,16 @@ import FretBoardControls from "./FretBoardControls.vue";
 import PopOver from "./PopOver.vue";
 
 import { computed, ref } from "vue";
-import { remPixels, isOdd, range, mapValueToRange } from "../helpers";
-import { objectMap } from "../helpers";
+import { remPixels, isOdd, range, mapValueToRange, objectMap } from "../helpers";
 
 import { useGuitar } from "../state/guitar";
 import { useTemperament } from "../state/temperament";
+import { usePitchDetection } from "../state/usePitchDetection";
 import { useFretBoardControls } from "../state/fretboard-controls";
 import { useTone } from "../effects/tone";
 
 const { playNote } = useTone();
+const { pitch, clarity } = usePitchDetection();
 const {
   pitchClassNames,
   divisionsPerOctave,
@@ -75,7 +76,7 @@ const stringNotes = computed((): Record<string, Record<string, any>> => {
     tuning.value,
     (_, pitchName) => dict[pitchName].frequency
   );
-  console.log(stringRootFrequencies);
+
   const notesWithDistances = objectMap(stringRootFrequencies, (string, rootFrequency) =>
     scaleNotesOnStrings.value[string].map(({ note, fretNumber }) => ({
       note,
@@ -83,9 +84,7 @@ const stringNotes = computed((): Record<string, Record<string, any>> => {
       noteY: stringY(rootFrequency, note.frequency),
     }))
   );
-  // console.log(notes);
-  // objectMap(tuning.values, ([, pitchName]) => notes.find((note) => note));
-  console.log(notesWithDistances);
+
   return notesWithDistances;
 });
 
@@ -102,7 +101,6 @@ const fretDistancesFromNut = (divisions = divisionsPerOctave.value) => {
     .map((note) => stringY(lowestStringRootFrequency, note.frequency));
 
   return twoOctaves;
-  //
 };
 
 const startingFret = 0;
@@ -136,27 +134,21 @@ function resetPopUp() {
   popUpY.value = NaN;
 }
 
-const fretDots = computed(() =>
-  shouldShow12TETFrets.value
-    ? [3, 5, 7, 9, 12, 15, 17, 19, 21, 24]
-    : {
-        12: [3, 5, 7, 9, 12, 15, 17, 19, 21, 24],
-        16: [3, 5, 7, 9, 11, 13, 16, 19, 21, 23, 25, 27, 29, 32],
-        17: [4, 7, 10, 13, 17, 21, 24, 27, 30, 34],
-        24: [6, 10, 14, 18, 24, 30, 34, 38, 42, 48],
-      }[divisionsPerOctave.value]
+const fretDots = computed(() => shouldShow12TETFrets.value
+  ? [3, 5, 7, 9, 12, 15, 17, 19, 21, 24]
+  : {
+      12: [3, 5, 7, 9, 12, 15, 17, 19, 21, 24],
+      16: [3, 5, 7, 9, 11, 13, 16, 19, 21, 23, 25, 27, 29, 32],
+      17: [4, 7, 10, 13, 17, 21, 24, 27, 30, 34],
+      24: [6, 10, 14, 18, 24, 30, 34, 38, 42, 48],
+    }[divisionsPerOctave.value]
 );
-// const fretDotSpacing = shouldShow12TETFrets.value ?
-// shouldShow12TETFrets
-//               ? (fretSpacing[fretDot - 1] + fretSpacing[fretDot - 2]) / 2 + y
-//               : fretSpacing[fretDot - 1] + y
 
 const hue = (degree: number, upperBound: number) => (360 * degree) / upperBound;
 const hsl = (degree: number, upperBound: number, l = 75) =>
   `hsl(${hue(degree, upperBound)}, 100%, ${l}%)`;
 
 const hslForNote = (note: { pitchClassNumber: number }, l = 50) => {
-  // if (!note) return;
   const degree = selectedScale.value.pitchClassNumbers
     .map((pitchClassNumber) => pitchClassNumber % selectedScale.value.period)
     .indexOf(note.pitchClassNumber);

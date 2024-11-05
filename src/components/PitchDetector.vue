@@ -1,39 +1,17 @@
 <script setup lang="ts">
- import { PitchDetector } from "pitchy";
+import { usePitchDetection } from "../state/usePitchDetection";
 import { ref, onMounted } from "vue";
 
-const pitch = ref<number | null>(null);
-const clarity = ref<number | null>(null);
+const { pitch, clarity, audioContext } = usePitchDetection();
 const button = ref<HTMLElement | null>(null);
-
-function updatePitch(analyserNode: AnalyserNode, detector: PitchDetector<Float32Array>, input: Float32Array, sampleRate: number) {
-  analyserNode.getFloatTimeDomainData(input);
-  const [_pitch, _clarity] = detector.findPitch(input, sampleRate);
-
-  // pitchDisplay.value.textContent = `${
-  pitch.value = Math.round(_pitch * 10) / 10
-  // } Hz`;
-  // document.getElementById("clarity").textContent = `${Math.round(
-  clarity.value= _clarity * 100;
-  // )} %`;
-  window.setTimeout(
-    () => updatePitch(analyserNode, detector, input, sampleRate),
-    100,
-  );
-}
+const audioInputs = ref<MediaDeviceInfo[] | null>(null);
+const selectedAudioInput = ref<string | null>(null);
 
 onMounted(() => {
-  const audioContext = new window.AudioContext();
-  const analyserNode = audioContext.createAnalyser();
-
   button.value?.addEventListener("click", () => audioContext.resume());
 
-  navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-    audioContext.createMediaStreamSource(stream).connect(analyserNode);
-    const detector = PitchDetector.forFloat32Array(analyserNode.fftSize);
-    detector.minVolumeDecibels = -30;
-    const input = new Float32Array(detector.inputLength);
-    updatePitch(analyserNode, detector, input, audioContext.sampleRate);
+  navigator.mediaDevices.enumerateDevices().then((devices) => {
+    audioInputs.value = devices.filter((device) => device.kind === "audioinput");
   });
 });
 
@@ -50,5 +28,14 @@ onMounted(() => {
     <p>
       <strong>Clarity:</strong> {{ clarity }} %
     </p>
+    <select v-model="selectedAudioInput">
+      <option
+        v-for="input in audioInputs"
+        :key="input.deviceId"
+        :value="input.deviceId"
+      >
+        {{ input.label }}
+      </option>
+    </select>
   </div>  
 </template>
