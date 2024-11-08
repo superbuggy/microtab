@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { usePitchDetection } from "@/state/usePitchDetection";
+import { usePitchDetection, audioContext } from "@/state/usePitchDetection";
 import { ref, onMounted } from "vue";
 
-const { pitch, clarity, audioContext } = usePitchDetection();
+const { pitch, clarity } = usePitchDetection();
 const button = ref<HTMLElement | null>(null);
 const audioInputs = ref<MediaDeviceInfo[] | null>(null);
 const selectedAudioInput = ref<string | null>(null);
