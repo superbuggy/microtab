@@ -1,5 +1,5 @@
 import { createRouter, createWebHashHistory } from "vue-router";
-import TabSheet from "../views/TabSheet.vue";
+import TabSheet from "@/views/TabSheet.vue";
 
 const router = createRouter({
   history: createWebHashHistory(import.meta.env.BASE_URL),

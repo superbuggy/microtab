@@ -74,9 +74,9 @@
 </template>
 
 <script setup lang="ts">
-import { useGuitar } from "../state/guitar";
-import { useTone } from "../effects/tone";
-import { useFretBoardControls } from "../state/fretboard-controls";
+import { useGuitar } from "@/state/guitar";
+import { useTone } from "@/effects/tone";
+import { useFretBoardControls } from "@/state/fretboard-controls";
 import { ref } from "vue";
 
 const { shouldShow12TETFrets } = useFretBoardControls();

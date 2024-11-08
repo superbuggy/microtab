@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { range } from "../helpers";
+import { range } from "@/helpers";
 import { reactive, ref, computed, watch, nextTick } from "vue";
-import { useGuitar } from "../state/guitar";
-import { useTemperament } from "../state/temperament";
-import { useChords } from "../state/chord";
-import { remPixels, isEven } from "../helpers";
-import type { GuitarChord, StringNumber } from "../definitions/types";
+import { useGuitar } from "@/state/guitar";
+import { useTemperament } from "@/state/temperament";
+import { useChords } from "@/state/chord";
+import { remPixels, isEven } from "@/helpers";
+import type { GuitarChord, StringNumber } from "@/definitions/types";
 
 const { updateChord } = useChords();
 

@@ -1,9 +1,9 @@
-import type { GuitarTuning, PitchName, StringNumber, Note } from './../definitions/types';
+import type { GuitarTuning, PitchName, StringNumber, Note } from '@/definitions/types';
 import { watch, ref, computed } from "vue";
-import { useScales } from "../definitions/scales";
+import { useScales } from "@/definitions/scales";
 import { useTemperament } from "./temperament";
 import { useTuning } from "./tuning";
-import { SupportedEDOs, PitchClass } from "../definitions/types";
+import { SupportedEDOs, PitchClass } from "@/definitions/types";
 const { TUNING } = useTuning();
 
 const { scaleNames, scalesFor } = useScales();

@@ -1,5 +1,5 @@
 import { ref } from "vue";
-import { setKeyIn } from "../helpers";
+import { setKeyIn } from "@/helpers";
 import { useGuitar } from "./guitar";
 import { v4 as uuidv4 } from "uuid";
 import { useTemperament } from "./temperament";

@@ -1,18 +1,19 @@
 <script setup lang="ts">
 import FretBoardControls from "./FretBoardControls.vue";
-import PopOver from "./PopOver.vue";
+import PopOver from "@/components/PopOver.vue";
 
 import { computed, ref } from "vue";
-import { remPixels, isOdd, range, mapValueToRange, objectMap } from "../helpers";
+import { remPixels, isOdd, range, mapValueToRange, objectMap } from "@/helpers";
 
-import { useGuitar } from "../state/guitar";
-import { useTemperament } from "../state/temperament";
-import { usePitchDetection } from "../state/usePitchDetection";
-import { useFretBoardControls } from "../state/fretboard-controls";
-import { useTone } from "../effects/tone";
+import { useGuitar } from "@/state/guitar";
+import { useTemperament } from "@/state/temperament";
+import { usePitchDetection } from "@/state/usePitchDetection";
+import { useFretBoardControls } from "@/state/fretboard-controls";
+import { useTone } from "@/effects/tone";
 
 const { playNote } = useTone();
-const { pitch, clarity } = usePitchDetection();
+// const { pitch, clarity } = usePitchDetection();
+
 const {
   pitchClassNames,
   divisionsPerOctave,
@@ -58,8 +59,7 @@ const distanceForFrequency = (stringRootFrequency: number, noteFrequency: number
   stringEnergy(stringRootFrequency) / (noteFrequency * 2);
 
 const stringY = (stringRootFrequency: number, noteFrequency: number) =>
-  // whyyyyy
-  1.775 *
+  1.775 * // not sure why this number is magic
   (fretboardHeight -
     mapValueToRange(
       distanceForFrequency(stringRootFrequency, noteFrequency),

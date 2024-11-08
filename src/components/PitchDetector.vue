@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { usePitchDetection } from "../state/usePitchDetection";
+import { usePitchDetection } from "@/state/usePitchDetection";
 import { ref, onMounted } from "vue";
 
 const { pitch, clarity, audioContext } = usePitchDetection();
