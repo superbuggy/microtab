@@ -12,7 +12,7 @@ import { useFretBoardControls } from "@/state/fretboard-controls";
 import { useTone } from "@/effects/tone";
 
 const { playNote } = useTone();
-// const { pitch, clarity } = usePitchDetection();
+const { pitch } = usePitchDetection();
 
 const {
   pitchClassNames,
@@ -52,14 +52,17 @@ const popUpNote = ref<{pitch: string, } | null>(null);
 
 const SCALE_LENGTH = 25.5;
 
-const stringEnergy = (stringRootFrequency: number) => 2 * SCALE_LENGTH * stringRootFrequency;
+function stringEnergy (stringRootFrequency: number) {
+  return 2 * SCALE_LENGTH * stringRootFrequency;
+} 
 // Frequency = 1 / 2L * stringEnergy //sqrt(T/m)
 // From a note frequency for a string, find the position on the string for that note frequency
-const distanceForFrequency = (stringRootFrequency: number, noteFrequency: number) =>
-  stringEnergy(stringRootFrequency) / (noteFrequency * 2);
+function distanceForFrequency (stringRootFrequency: number, noteFrequency: number) {
+  return stringEnergy(stringRootFrequency) / (noteFrequency * 2);
+}
 
-const stringY = (stringRootFrequency: number, noteFrequency: number) =>
-  1.775 * // not sure why this number is magic
+function stringY (stringRootFrequency: number, noteFrequency: number) {
+  return 1.775 * // not sure why this number is magic
   (fretboardHeight -
     mapValueToRange(
       distanceForFrequency(stringRootFrequency, noteFrequency),
@@ -68,6 +71,13 @@ const stringY = (stringRootFrequency: number, noteFrequency: number) =>
       y,
       fretboardHeight
     ));
+}
+
+const stringsY = computed((): Record<string, number> => objectMap(tuning.value, (_, pitchName) => {
+  if (!pitch.value) return
+  const frequency = notesDictionaryFor(divisionsPerOctave.value)[pitchName].frequency;
+  return stringY(frequency, pitch.value);
+}));
 
 const stringNotes = computed((): Record<string, Record<string, any>> => {
   const guideLineDivisions = shouldShow12TETFrets.value ? 12 : divisionsPerOctave.value;
@@ -89,7 +99,7 @@ const stringNotes = computed((): Record<string, Record<string, any>> => {
 });
 
 // Assumes an equal step temperament
-const fretDistancesFromNut = (divisions = divisionsPerOctave.value) => {
+function fretDistancesFromNut (divisions = divisionsPerOctave.value) {
   // TODO: Add True Temperament Mode
   const lowestStringRootIndex = notesFor(divisions).findIndex(
     (note) => note.pitch === tuning.value.string6
@@ -144,11 +154,15 @@ const fretDots = computed(() => shouldShow12TETFrets.value
     }[divisionsPerOctave.value]
 );
 
-const hue = (degree: number, upperBound: number) => (360 * degree) / upperBound;
-const hsl = (degree: number, upperBound: number, l = 75) =>
-  `hsl(${hue(degree, upperBound)}, 100%, ${l}%)`;
+function hue (degree: number, upperBound: number) {
+  return (360 * degree) / upperBound;
+}
 
-const hslForNote = (note: { pitchClassNumber: number }, l = 50) => {
+function hsl (degree: number, upperBound: number, l = 75) {
+  return `hsl(${hue(degree, upperBound)}, 100%, ${l}%)`;
+}
+
+function hslForNote (note: { pitchClassNumber: number }, l = 50) {
   const degree = selectedScale.value.pitchClassNumbers
     .map((pitchClassNumber) => pitchClassNumber % selectedScale.value.period)
     .indexOf(note.pitchClassNumber);
@@ -319,6 +333,14 @@ const textOffsetY = fontSize;
             >
               <title>{{ fretNumber }}</title>
             </circle>
+            <circle
+              :cx="index * stringSpacing + x"
+              :cy="stringsY[string]"
+              :r="Math.min(stringSpacing / 5)"
+              fill="transparent"
+              stroke="#F00"
+              stroke-width="4" 
+            />
           </g>
         </g>
       </g>

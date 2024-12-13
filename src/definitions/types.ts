@@ -1,10 +1,8 @@
 import { noteInTET } from './TET.ts';
 
-export type StringNumber = `string${number}`;
-
 export type Note = InstanceType<ReturnType<typeof noteInTET>>;
 
-
+export type StringNumber = `string${number}`;
 export type GuitarChord = {
   id: string;
   [stringNumber: StringNumber]: number | null;
