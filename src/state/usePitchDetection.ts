@@ -2,7 +2,7 @@ import { PitchDetector } from "pitchy";
 import { ref, onMounted } from "vue";
 
 export const audioContext = new window.AudioContext();
-const pitch = ref<number | null>(null);
+const inputPitch = ref<number | null>(null);
 const clarity = ref<number | null>(null);
 
 export function usePitchDetection() {
@@ -10,7 +10,7 @@ export function usePitchDetection() {
     analyserNode.getFloatTimeDomainData(input);
     const [_pitch, _clarity] = detector.findPitch(input, sampleRate);
 
-    pitch.value = Math.round(_pitch * 10) / 10
+    inputPitch.value = Math.round(_pitch * 10) / 10
     clarity.value = _clarity * 100;
     window.setTimeout(
       () => updatePitch(analyserNode, detector, input, sampleRate),
@@ -29,5 +29,5 @@ export function usePitchDetection() {
     });
   });
 
-  return { pitch, clarity };
+  return { inputPitch, clarity };
 }

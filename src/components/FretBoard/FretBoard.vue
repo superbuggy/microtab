@@ -12,7 +12,7 @@ import { useFretBoardControls } from "@/state/fretboard-controls";
 import { useTone } from "@/effects/tone";
 
 const { playNote } = useTone();
-const { pitch } = usePitchDetection();
+const { inputPitch } = usePitchDetection();
 
 const {
   pitchClassNames,
@@ -74,9 +74,9 @@ function stringY (stringRootFrequency: number, noteFrequency: number) {
 }
 
 const stringsY = computed((): Record<string, number> => objectMap(tuning.value, (_, pitchName) => {
-  if (!pitch.value) return
+  if (!inputPitch.value) return
   const frequency = notesDictionaryFor(divisionsPerOctave.value)[pitchName].frequency;
-  return stringY(frequency, pitch.value);
+  return stringY(frequency, inputPitch.value);
 }));
 
 const stringNotes = computed((): Record<string, Record<string, any>> => {
