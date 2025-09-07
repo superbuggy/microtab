@@ -29,3 +29,9 @@ export type TetSchema = {
 export type PitchMap = Record<string, number>;
 
 export type SupportedEDOs = 16 | 17 | 24;
+
+export type Key = string | number;
+export type Dict = Record<Key, any>;
+export type Pair = [Key, any];
+export type Callback = (key: Key, value: any) => any;
+export type EntriesCallback = (pair: Pair, index: number) => any;

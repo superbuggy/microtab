@@ -88,7 +88,7 @@ const stringNotes = computed((): Record<string, Record<string, any>> => {
   );
 
   const notesWithDistances = objectMap(stringRootFrequencies, (string, rootFrequency) =>
-    scaleNotesOnStrings.value[string].map(({ note, fretNumber }) => ({
+    scaleNotesOnStrings.value[string].map(({ note, fretNumber }: { note: any, fretNumber: number}) => ({
       note,
       fretNumber,
       noteY: stringY(rootFrequency, note.frequency),
@@ -125,10 +125,10 @@ const fretDistances = computed(() =>
 );
 const fretSpacing = computed(() => fretDistances.value.slice(1));
 const fretHeights = computed(() =>
-  fretSpacing.value.reduce((distances, length, index) => {
+  fretSpacing.value.reduce((distances: number[], length: number, index: number) => {
     distances.push(length - fretDistances.value[index]);
     return distances;
-  }, [] as number[])
+  }, [])
 );
 
 function handleHover(event: Event, note: {pitch: string}) {

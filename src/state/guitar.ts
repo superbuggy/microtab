@@ -1,4 +1,4 @@
-import type { GuitarTuning, PitchName, StringNumber, Note } from '@/definitions/types';
+import type { GuitarTuning, PitchName, StringNumber, Note, Dict } from '@/definitions/types';
 import { watch, ref, computed } from "vue";
 import { useScales } from "@/definitions/scales";
 import { useTemperament } from "./temperament";
@@ -138,7 +138,7 @@ export function useGuitar() {
     return guitar;
   });
 
-  const scaleNotesOnStrings = computed(() => fretboardScale.value);
+  const scaleNotesOnStrings = computed((): Dict => fretboardScale.value);
 
   selectScale(selectedScaleName.value);
 

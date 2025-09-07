@@ -1,16 +1,20 @@
 import pitchClassNumbers12TET from "./definitions/12-tet-pitch-class-numbers.json";
 
-export const setKeyIn = (object: ObjectMappable, key: string, value: any = null): ObjectMappable => {
+import { Dict, Callback, EntriesCallback } from "./definitions/types";
+
+export const setKeyIn = (object: Dict, key: string, value: any = null): Dict => {
   object[key] = value;
   return object;
 };
 
-type Callback = (...args: any[]) => any;
-type ObjectMappable = Record<string | number, any>;
-export const objectMap = (object: ObjectMappable, fn: Callback) =>
+
+export const objectMap = (object: Dict, fn: Callback) =>
   Object.entries(object).reduce((a, [k, v]) => setKeyIn(a, k, fn(k, v)), {});
 
-export const objectFilter = (object: ObjectMappable, fn: Callback) => Object.entries(object).filter(fn);
+export const objectTransform = (object: Dict, fn: EntriesCallback) =>
+  Object.fromEntries(Object.entries(object).map(fn));
+
+export const objectFilter = (object: Dict, fn: EntriesCallback) => Object.entries(object).filter(fn);
 
 export const mapValueToRange = (
   valueInFromRange: number,
@@ -62,7 +66,7 @@ export const euclideanPattern = (pulses: number, steps: number) => {
   let level = 0;
 
   while (true) {
-    // eslint-disable-line
+     
     counts.push(Math.floor(divisor / remainders[level]));
     remainders.push(divisor % remainders[level]);
     divisor = remainders[level];
