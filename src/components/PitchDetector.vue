@@ -1,18 +1,29 @@
 <script setup lang="ts">
 import { usePitchDetection } from "../state/usePitchDetection";
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
+import Strobe from "./Strobe.vue";
 
-const { pitch, clarity, audioContext } = usePitchDetection();
+const { audioContext } = usePitchDetection();
 const button = ref<HTMLElement | null>(null);
 const audioInputs = ref<MediaDeviceInfo[] | null>(null);
 const selectedAudioInput = ref<string | null>(null);
 
-onMounted(() => {
-  button.value?.addEventListener("click", () => audioContext.resume());
+
+function initalizeAudio() {
+  audioContext.resume();
 
   navigator.mediaDevices.enumerateDevices().then((devices) => {
     audioInputs.value = devices.filter((device) => device.kind === "audioinput");
   });
+}
+
+onMounted(() => {
+  button.value?.addEventListener("click", initalizeAudio);
+
+});
+
+onUnmounted(() => {
+  button.value?.removeEventListener("click", initalizeAudio);
 });
 
 </script>
@@ -22,20 +33,17 @@ onMounted(() => {
     <button ref="button">
       listen
     </button>
-    <p>
-      <strong>Pitch:</strong> {{ pitch }} Hz
-    </p>
-    <p>
-      <strong>Clarity:</strong> {{ clarity }} %
-    </p>
-    <select v-model="selectedAudioInput">
-      <option
-        v-for="input in audioInputs"
-        :key="input.deviceId"
-        :value="input.deviceId"
-      >
-        {{ input.label }}
-      </option>
-    </select>
-  </div>  
+    <div v-if="audioInputs">
+      <select v-model="selectedAudioInput">
+        <option
+          v-for="input in audioInputs"
+          :key="input.deviceId"
+          :value="input.deviceId"
+        >
+          {{ input.label }}
+        </option>
+      </select>
+    </div>
+    <Strobe />
+  </div>
 </template>

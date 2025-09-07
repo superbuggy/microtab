@@ -7,12 +7,12 @@ import { remPixels, isOdd, range, mapValueToRange, objectMap } from "../helpers"
 
 import { useGuitar } from "../state/guitar";
 import { useTemperament } from "../state/temperament";
-import { usePitchDetection } from "../state/usePitchDetection";
+
 import { useFretBoardControls } from "../state/fretboard-controls";
 import { useTone } from "../effects/tone";
 
 const { playNote } = useTone();
-const { pitch, clarity } = usePitchDetection();
+
 const {
   pitchClassNames,
   divisionsPerOctave,
@@ -115,10 +115,10 @@ const fretDistances = computed(() =>
 );
 const fretSpacing = computed(() => fretDistances.value.slice(1));
 const fretHeights = computed(() =>
-  fretSpacing.value.reduce((distances, length, index) => {
+  fretSpacing.value.reduce((distances: number[], length: number, index: number) => {
     distances.push(length - fretDistances.value[index]);
     return distances;
-  }, [] as number[])
+  }, [])
 );
 
 function handleHover(event: Event, note: {pitch: string}) {
