@@ -56,8 +56,12 @@ function receivedText(e: Event) {
       {{ temperamentName }}
     </option>
   </select>
-  <FretBoard />
-  <PitchDetector />
+  <Suspense>
+    <FretBoard />
+  </Suspense>
+  <Suspense>
+    <PitchDetector />
+  </Suspense>
   <main>
     <div
       v-for="chord in chords"

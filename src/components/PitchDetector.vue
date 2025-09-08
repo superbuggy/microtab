@@ -4,28 +4,32 @@ import { usePitchDetection } from "@/state/usePitchDetection";
 ;
 import { ref, onMounted, onUnmounted } from "vue";
 import Strobe from "./Strobe.vue";
+import { useAudioInputDevices } from "@/state/useAudioInputDevices";
 
-const { audioContext } = usePitchDetection();
+const { initializeAudio } = usePitchDetection();
+const { deviceList, queryDevices, setInputDevice } = await useAudioInputDevices();
 const button = ref<HTMLElement | null>(null);
-const audioInputs = ref<MediaDeviceInfo[] | null>(null);
 const selectedAudioInput = ref<string | null>(null);
 
-
-function initalizeAudio() {
-  audioContext.resume();
-
-  navigator.mediaDevices.enumerateDevices().then((devices) => {
-    audioInputs.value = devices.filter((device) => device.kind === "audioinput");
-  });
+async function handleClick() {
+  initializeAudio();
+  await queryDevices();
+  initializeAudio();
 }
 
-onMounted(() => {
-  button.value?.addEventListener("click", initalizeAudio);
+function handleDeviceChange(value: string) {
+  alert(`Changing audio input to ${value}`);
+  setInputDevice(value);
+  initializeAudio();
+}
+  
 
+onMounted(() => {
+  button.value?.addEventListener("click", handleClick);
 });
 
 onUnmounted(() => {
-  button.value?.removeEventListener("click", initalizeAudio);
+  button.value?.removeEventListener("click", handleClick);
 });
 
 </script>
@@ -33,14 +37,17 @@ onUnmounted(() => {
   <div>
     <h1>Pitch Detector</h1>
     <button ref="button">
-      listen
+      Load Devices
     </button>
-    <div v-if="audioInputs">
-      <select v-model="selectedAudioInput">
+    <div v-if="deviceList?.length">
+      <select
+        v-model="selectedAudioInput"
+        @change="handleDeviceChange(($event.target as HTMLSelectElement).value)"
+      >
         <option
-          v-for="input in audioInputs"
+          v-for="input in deviceList"
           :key="input.deviceId"
-          :value="input.deviceId"
+          :value="input.label"
         >
           {{ input.label }}
         </option>

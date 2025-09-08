@@ -12,7 +12,7 @@ import { useFretBoardControls } from "@/state/fretboard-controls";
 import { useTone } from "@/effects/tone";
 
 const { playNote } = useTone();
-const { inputPitch } = usePitchDetection();
+const { inputPitch } = await usePitchDetection();
 
 const {
   pitchClassNames,
