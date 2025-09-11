@@ -1,4 +1,5 @@
 import { useTuning } from "../state/tuning";
+import { computed } from "vue";
 const { TUNING } = useTuning();
 import pitchMapJson from './12-tet-pitch-frequencies.json'
 import type { PitchMap, TetSchema } from "./types";
@@ -6,10 +7,10 @@ import type { PitchMap, TetSchema } from "./types";
 const pitchMap: PitchMap = pitchMapJson;
 
 // TODO: convert to ref
-const referencePitch = pitchMap[TUNING.value[0]];
-const referenceName = TUNING.value[0].replace(/\d/g, "");
+const referencePitch = computed(()=>pitchMap[TUNING.value[0]]);
+const referenceName = computed(()=>TUNING.value[0].replace(/\d/g, ""));
 
-// TODO: Support enharmonicity
+// TODO: Support enharmonicity, reduce equivalent pitches to integer, use those integer as keys
 
 
 // TODO: convert to tet-builder functions that take name and pitch as args
@@ -17,8 +18,8 @@ export const tet12schema: TetSchema = {
   name: "12 TET",
   description: "Standard 12-tone equal temperament.",
   source: "https://en.wikipedia.org/wiki/12_equal_temperament",
-  referenceName,
-  referencePitch,
+  referenceName: referenceName.value,
+  referencePitch: referencePitch.value,
   referenceOctave: 0,
   octaveBaseName: "C",
   notes: {
@@ -41,8 +42,8 @@ export const tet24schema: TetSchema = {
   name: "24 TET",
   description: "Standard 24-tone equal temperament.",
   source: "https://en.wikipedia.org/wiki/Quarter_tone#Quarter-tone_scale",
-  referenceName,
-  referencePitch,
+  referenceName: referenceName.value,
+  referencePitch: referencePitch.value,
   referenceOctave: 0,
   octaveBaseName: "C",
   notes: {
@@ -77,8 +78,8 @@ export const tet16schema: TetSchema = {
   name: "16 TET",
   description: "Standard 16-tone equal temperament.",
   source: "https://en.xen.wiki/w/16edo",
-  referenceName,
-  referencePitch,
+  referenceName: referenceName.value,
+  referencePitch: referencePitch.value,
   referenceOctave: 0,
   octaveBaseName: "C",
   notes: {
@@ -107,8 +108,8 @@ export const tet17schema: TetSchema = {
   name: "17 TET",
   description: "Standard 17-tone equal temperament.",
   source: "https://en.xen.wiki/w/17edo",
-  referenceName,
-  referencePitch,
+  referenceName: referenceName.value,
+  referencePitch: referencePitch.value,
   referenceOctave: 0,
   octaveBaseName: "C",
   // temperament.js has a bug in the check to see if a note has been defined conflictually--Math.round workaround

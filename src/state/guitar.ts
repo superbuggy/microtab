@@ -17,7 +17,7 @@ const stringQuantity = ref(DEFAULT_STRING_QUANTITY);
 const stringNumbers = Array.from({ length: stringQuantity.value }).map(
   (_, index, { length }) => length - index
 );
-const tuning = ref<GuitarTuning>(
+const tuningByStringNumber = ref<GuitarTuning>(
   Object.fromEntries(
     stringNumbers.map((stringNumber, index) => [
       `string${stringNumber}`,
@@ -26,7 +26,7 @@ const tuning = ref<GuitarTuning>(
   )
 );
 const startingFromFret = ref(0);
-const lowestNote: PitchName = tuning.value[`string${stringNumbers[0]}`];
+const lowestNote: PitchName = tuningByStringNumber.value[`string${stringNumbers[0]}`];
 const scales = ref(scalesFor(lowestNote.replace(/\d/, "") as PitchClass));
 const selectedScaleName = ref("Ionian");
 
@@ -100,13 +100,13 @@ export function useGuitar() {
   const fretboardScale = computed(() => {
     const guitar = initializedGuitarNotes();
     for (const stringNumber in guitar) {
-      const startingNoteOnString = tuning.value[stringNumber as StringNumber];
+      const startingNoteOnString = tuningByStringNumber.value[stringNumber as StringNumber];
       const offset = distanceBetweenNotes(lowestNote, startingNoteOnString);
       const previousStringNumber = stringNumber.replace(/\d/, (n) => `${+n + 1}`) as StringNumber;
 
       const distanceBetweenStrings = guitar[previousStringNumber]
         ? distanceBetweenNotes(
-            tuning.value[previousStringNumber as StringNumber],
+            tuningByStringNumber.value[previousStringNumber as StringNumber],
             startingNoteOnString
           )
         : 0;
@@ -145,7 +145,7 @@ export function useGuitar() {
   return {
     stringQuantity,
     divisionsPerOctave,
-    tuning,
+    tuningByStringNumber,
     stringNumbers,
     scaleNotesOnStrings,
     scaleNames,

@@ -12,13 +12,14 @@ import { useFretBoardControls } from "@/state/fretboard-controls";
 import { useTone } from "@/effects/tone";
 
 const { playNote } = useTone();
-const { inputPitch } = await usePitchDetection();
+const { inputPitch } = usePitchDetection();
 
 const {
   pitchClassNames,
   divisionsPerOctave,
   notesFor,
   notesDictionaryFor,
+  notesInTemperamentByPitch,
 } = useTemperament();
 const { shouldShow12TETFrets } = useFretBoardControls();
 const {
@@ -26,7 +27,7 @@ const {
   scaleNotesOnStrings,
   selectedScale,
   startingFromFret,
-  tuning,
+  tuningByStringNumber,
 } = useGuitar();
 
 const noteNames = computed(() =>
@@ -41,49 +42,66 @@ const noteNames = computed(() =>
 const VIEWBOX_X_MAX = 600;
 const VIEWBOX_Y_MAX = 4000;
 // const REACHABLE_FRETS_PERCENTAGE = 24 / 12;
-const x = VIEWBOX_X_MAX / 4;
-const y = VIEWBOX_Y_MAX / 8;
+const xBoardStart = VIEWBOX_X_MAX / 4;
+const yBoardStart = VIEWBOX_Y_MAX / 8;
 const width = VIEWBOX_X_MAX / 2;
-const fretboardHeight = VIEWBOX_Y_MAX / 2;
+const fretboardLengthPx = VIEWBOX_Y_MAX / 2;
 
-const popUpX = ref<number>(NaN);
-const popUpY = ref<number>(NaN);
+const popUpX = ref<number|null>(null);
+const popUpY = ref<number|null>(null);
 const popUpNote = ref<{pitch: string, } | null>(null);
 
 const SCALE_LENGTH = 25.5;
 
 function stringEnergy (stringRootFrequency: number) {
+  // Mersenne's Law
+  // L = 1/2 * sqrt(T/m) * 1/f
+  // T/m = (2Lf)^2
+
   return 2 * SCALE_LENGTH * stringRootFrequency;
 } 
 // Frequency = 1 / 2L * stringEnergy //sqrt(T/m)
 // From a note frequency for a string, find the position on the string for that note frequency
 function distanceForFrequency (stringRootFrequency: number, noteFrequency: number) {
+  // Mersenne's Law
+  // L = 1/2 * sqrt(T/m) * 1/f
+  // T/m = (2Lf)^2
+
   return stringEnergy(stringRootFrequency) / (noteFrequency * 2);
 }
 
-function stringY (stringRootFrequency: number, noteFrequency: number) {
+function noteYCoord (stringRootFrequency: number, noteFrequency: number) {
   return 1.775 * // not sure why this number is magic
-  (fretboardHeight -
+  (fretboardLengthPx -
     mapValueToRange(
       distanceForFrequency(stringRootFrequency, noteFrequency),
       0,
       SCALE_LENGTH,
-      y,
-      fretboardHeight
-    ));
+      yBoardStart,
+      fretboardLengthPx
+    )
+  ) + yBoardStart;
 }
 
-const stringsY = computed((): Record<string, number> => objectMap(tuning.value, (_, pitchName) => {
-  if (!inputPitch.value) return
-  const frequency = notesDictionaryFor(divisionsPerOctave.value)[pitchName].frequency;
-  return stringY(frequency, inputPitch.value);
-}));
+const detectedPitchStringsCoords = computed((): Record<string, number> | null => {
+  if (inputPitch.value === null) return null;
+  return objectMap(rootFrequenciesByStringNumber.value, (_, rootFrequency) => {
+    return noteYCoord(rootFrequency, inputPitch.value as number);
+  });
+});
+
+const rootFrequenciesByStringNumber = computed((): Record<string, number> => {
+  return objectMap(
+    tuningByStringNumber.value,
+    (_, pitchName) => notesInTemperamentByPitch.value[pitchName].frequency
+  );
+});
 
 const stringNotes = computed((): Record<string, Record<string, any>> => {
   const guideLineDivisions = shouldShow12TETFrets.value ? 12 : divisionsPerOctave.value;
   const dict = notesDictionaryFor(guideLineDivisions);
   const stringRootFrequencies = objectMap(
-    tuning.value,
+    tuningByStringNumber.value,
     (_, pitchName) => dict[pitchName].frequency
   );
 
@@ -91,9 +109,12 @@ const stringNotes = computed((): Record<string, Record<string, any>> => {
     scaleNotesOnStrings.value[string].map(({ note, fretNumber }: { note: any, fretNumber: number}) => ({
       note,
       fretNumber,
-      noteY: stringY(rootFrequency, note.frequency),
+      string, 
+      noteY: noteYCoord(rootFrequency, note.frequency),
     }))
   );
+
+  console.log({ stringNotes: notesWithDistances });
 
   return notesWithDistances;
 });
@@ -102,13 +123,13 @@ const stringNotes = computed((): Record<string, Record<string, any>> => {
 function fretDistancesFromNut (divisions = divisionsPerOctave.value) {
   // TODO: Add True Temperament Mode
   const lowestStringRootIndex = notesFor(divisions).findIndex(
-    (note) => note.pitch === tuning.value.string6
+    (note) => note.pitch === tuningByStringNumber.value.string6
   );
-  const lowestStringRootFrequency = notesDictionaryFor(divisions)[tuning.value.string6]
+  const lowestStringRootFrequency = notesDictionaryFor(divisions)[tuningByStringNumber.value.string6]
     .frequency;
   const twoOctaves = notesFor(divisions)
     .slice(lowestStringRootIndex, lowestStringRootIndex + 2 * divisions)
-    .map((note) => stringY(lowestStringRootFrequency, note.frequency));
+    .map((note) => noteYCoord(lowestStringRootFrequency, note.frequency));
 
   return twoOctaves;
 };
@@ -123,28 +144,28 @@ const fretDistances = computed(() =>
    //@ts-expect-error - Argument of type '12 | SupportedEDOs' is not assignable to parameter of type 'SupportedEDOs | undefined'.
   fretDistancesFromNut(shouldShow12TETFrets.value ? 12 : divisionsPerOctave.value)
 );
-const fretSpacing = computed(() => fretDistances.value.slice(1));
-const fretHeights = computed(() =>
-  fretSpacing.value.reduce((distances: number[], length: number, index: number) => {
+const fretSpacingPx = computed(() => fretDistances.value.slice(1));
+const fretHeightsPx = computed(() =>
+  fretSpacingPx.value.reduce((distances: number[], length: number, index: number) => {
     distances.push(length - fretDistances.value[index]);
     return distances;
   }, [])
 );
 
-function handleHover(event: Event, note: {pitch: string}) {
+function handleHover (event: Event, note: {pitch: string}) {
   const target = event.target as SVGElement;
   popUpX.value = Number(target.getAttribute('cx'));
   popUpY.value = Number(target.getAttribute('cy'));
   popUpNote.value = note;
 }
 
-function resetPopUp() {
+function resetPopUp () {
   popUpNote.value = null;
   popUpX.value = NaN;
   popUpY.value = NaN;
 }
 
-const fretDots = computed(() => shouldShow12TETFrets.value
+const dottedFrets = computed(() => shouldShow12TETFrets.value
   ? [3, 5, 7, 9, 12, 15, 17, 19, 21, 24]
   : {
       12: [3, 5, 7, 9, 12, 15, 17, 19, 21, 24],
@@ -201,29 +222,29 @@ const textOffsetY = fontSize;
       :class="{ 'showing-12-tet': shouldShow12TETFrets }"
     >
       <text
-        :x="x + 0.5 * textOffsetX"
-        :y="y + textOffsetY"
+        :x="xBoardStart + 0.5 * textOffsetX"
+        :y="yBoardStart + textOffsetY"
         :font-size="fontSize"
-        :transform="`rotate(90 ${x} ${y})`"
+        :transform="`rotate(90 ${xBoardStart} ${yBoardStart})`"
       >
         {{ startingFret }}
       </text>
       <text
-        :x="x - 2 * textOffsetX"
-        :y="y + fretboardHeight + 1.5 * textOffsetY"
+        :x="xBoardStart - 2 * textOffsetX"
+        :y="yBoardStart + fretboardLengthPx + 1.5 * textOffsetY"
         :font-size="fontSize"
-        :transform="`rotate(90 ${x - textOffsetX} ${
-          y + fretboardHeight + textOffsetY + 2
+        :transform="`rotate(90 ${xBoardStart - textOffsetX} ${
+          yBoardStart + fretboardLengthPx + textOffsetY + 2
         })`"
         transform-origin=""
       >
         {{ endingFret }}
       </text>
       <rect
-        :x="x"
-        :y="y"
+        :x="xBoardStart"
+        :y="yBoardStart"
         :width="width"
-        :height="fretboardHeight"
+        :height="fretboardLengthPx"
         class="tab"
       />
 
@@ -235,20 +256,20 @@ const textOffsetY = fontSize;
           <rect
             v-if="divisionsPerOctave === 24 && isOdd(fret + 1)"
             :key="fret"
-            :x="x"
-            :y="fretDistances[fret] + y"
+            :x="xBoardStart"
+            :y="fretDistances[fret]"
             :width="width"
-            :height="fretHeights[fret]"
+            :height="fretHeightsPx[fret]"
             fill="#eee"
           />
           <line
-            v-if="fretSpacing[fret]"
+            v-if="fretSpacingPx[fret]"
             :key="fret"
             class="fret"
-            :x1="x"
-            :y1="fretSpacing[fret] + y"
-            :x2="x + width"
-            :y2="fretSpacing[fret] + y"
+            :x1="xBoardStart"
+            :y1="fretSpacingPx[fret]"
+            :x2="xBoardStart + width"
+            :y2="fretSpacingPx[fret]"
           />
         </g>
         <g v-if="shouldShow12TETFrets">
@@ -256,10 +277,10 @@ const textOffsetY = fontSize;
             v-for="fret in reachableFrets"
             :key="fret"
             class="tet-12-overlay fret"
-            :x1="x"
-            :y1="fretSpacing[fret] + y"
-            :x2="x + width"
-            :y2="fretSpacing[fret] + y"
+            :x1="xBoardStart"
+            :y1="fretSpacingPx[fret]"
+            :x2="xBoardStart + width"
+            :y2="fretSpacingPx[fret]"
             stroke-width="2"
           />
         </g>
@@ -268,15 +289,15 @@ const textOffsetY = fontSize;
         <line
           v-for="string in stringQuantity - 2"
           :key="string"
-          :x1="string * stringSpacing + x"
-          :y1="y"
-          :x2="string * stringSpacing + x"
-          :y2="y + fretboardHeight"
+          :x1="string * stringSpacing + xBoardStart"
+          :y1="yBoardStart"
+          :x2="string * stringSpacing + xBoardStart"
+          :y2="yBoardStart + fretboardLengthPx"
         />
       </g>
       <g class="fret-dots-group">
         <g
-          v-for="fretDot in fretDots"
+          v-for="fretDot in dottedFrets"
           :key="fretDot"
         >
           <circle
@@ -287,23 +308,23 @@ const textOffsetY = fontSize;
             "
             :cy="
               divisionsPerOctave !== 24
-                ? (fretSpacing[fretDot - 1] + fretSpacing[fretDot - 2]) / 2 + y
-                : fretSpacing[fretDot - 1] + y
+                ? (fretSpacingPx[fretDot - 1] + fretSpacingPx[fretDot - 2]) / 2
+                : fretSpacingPx[fretDot - 1]
             "
-            :r="Math.min(stringSpacing / 3, fretHeights[fretDot] * 0.4)"
+            :r="Math.min(stringSpacing / 3, fretHeightsPx[fretDot] * 0.4)"
             class="fret-dot"
           >
-            <title>{{ fretHeights[fretDot] * 0.666 }}, {{ stringSpacing / 3 }}</title>
+            <title>{{ fretHeightsPx[fretDot] * 0.666 }}, {{ stringSpacing / 3 }}</title>
           </circle>
           <circle
             v-if="fretDot % (shouldShow12TETFrets ? 12 : divisionsPerOctave) === 0"
             :cx="width * 1.2"
             :cy="
               divisionsPerOctave !== 24
-                ? (fretSpacing[fretDot - 1] + fretSpacing[fretDot - 2]) / 2 + y
-                : fretSpacing[fretDot - 1] + y
+                ? (fretSpacingPx[fretDot - 1] + fretSpacingPx[fretDot - 2]) / 2 
+                : fretSpacingPx[fretDot - 1] 
             "
-            :r="Math.min(stringSpacing / 3, fretHeights[fretDot] * 0.4)"
+            :r="Math.min(stringSpacing / 3, fretHeightsPx[fretDot] * 0.4)"
             class="fret-dot octave-dots"
           />
         </g>
@@ -314,16 +335,16 @@ const textOffsetY = fontSize;
           :key="fret"
         >
           <g
-            v-for="(string, index) in Object.keys(stringNotes)"
+            v-for="(string, index) of Object.keys(stringNotes)"
             :key="string"
           >
             <circle
-              v-for="{ note, fretNumber, noteY } in stringNotes[string]"
+              v-for="{ note, fretNumber, noteY, string: stringN } in stringNotes[string]"
               :id="`note-${note.frequency}-hz`"
               :key="`${string}-${fretNumber}`"
               class="fretted-note active"
-              :cx="index * stringSpacing + x"
-              :cy="noteY + y"
+              :cx="index * stringSpacing + xBoardStart"
+              :cy="noteY"
               :r="Math.min(stringSpacing / 5)"
               :fill="hslForNote(note)"
               stroke-width="4"
@@ -331,12 +352,13 @@ const textOffsetY = fontSize;
               @mouseout="resetPopUp"
               @click="playNote(note.frequency)"
             >
-              <title>{{ fretNumber }}</title>
+              <title>{{ fretNumber }} {{ note }} {{ stringN }}</title>
             </circle>
             <circle
-              :cx="index * stringSpacing + x"
-              :cy="stringsY[string]"
-              :r="Math.min(stringSpacing / 5)"
+              v-if="detectedPitchStringsCoords"
+              :cx="index * stringSpacing + xBoardStart"
+              :cy="detectedPitchStringsCoords[string]"
+              :r="Math.min(stringSpacing / 10)"
               fill="transparent"
               stroke="#F00"
               stroke-width="4" 
@@ -345,10 +367,11 @@ const textOffsetY = fontSize;
         </g>
       </g>
       <PopOver
+        v-if="popUpX !== null && popUpY !== null && popUpNote"
         :x="popUpX"
         :y="popUpY"
       >
-        <p v-if="popUpNote">Frequency: {{ popUpNote.pitch }}</p>
+        <p>Frequency: {{ popUpNote.pitch }}</p>
       </PopOver>
     </svg>
   </div>

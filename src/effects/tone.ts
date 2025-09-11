@@ -6,11 +6,9 @@ const bps = computed(() => (2 * tempo.value) / 60);
 
 Tone.Transport.on("start", () => {
   Tone.Transport.bpm.value = Number(tempo.value);
-  console.log(Tone.Transport.bpm.value);
 });
 export function useTone() {
   function changeTempo(event: Event) {
-    // Tone.getTransport().bpm.rampTo(Number(tempo.value), 0.35);
     const target = event.target as HTMLInputElement;
     tempo.value = Number(target?.value);
     Tone.getTransport().bpm.value = Number(tempo.value);
@@ -18,8 +16,6 @@ export function useTone() {
   function playNoteSequence(notesFrequenciesToPlay: {time: number, note: number[] | string }[], onEnd: () => void) {
     stopPlayback();
     Tone.Transport.start();
-    // Tone.start();
-
     const synth = new Tone.PolySynth().toDestination();
     const noteDuration = 0.25;
     const sequenceDuration = notesFrequenciesToPlay.length * noteDuration;
@@ -41,10 +37,8 @@ export function useTone() {
           onEnd();
         }
       },
-      // [...notesToPlay, { time: sequenceDuration, note: "END" }]
       sequence
     );
-    console.log(part, notesFrequenciesToPlay);
     part.start(0);
     part.loopEnd = part.length / bps.value;
     part.loop = isLooped.value;
@@ -53,9 +47,10 @@ export function useTone() {
     Tone.Transport.stop();
     Tone.Transport.cancel(-1);
   }
-  function playNote(noteToPlay: string) {
+  function playNote(noteToPlay: number) {
+    const MULTIPLIER = 1;
     const synth = new Tone.PolySynth().toDestination();
-    synth.triggerAttackRelease(noteToPlay, 1);
+    synth.triggerAttackRelease(noteToPlay * MULTIPLIER, 1);
   }
   return {
     tempo,

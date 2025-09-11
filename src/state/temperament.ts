@@ -51,7 +51,7 @@ const notesDictionary = computed(() =>
 const temperamentFor = (octavalDivisions: number) => {
   const name = schemas.find((schema: TetSchema) => schema.name.includes(`${octavalDivisions}`))?.name;
   if (!name) throw new Error(`Temperament not found for ${octavalDivisions} TET  `);
-  console.log(name, temperaments[name]);  
+  // console.log(name, temperaments[name]);  
   return temperaments[name];
 };
 
@@ -68,6 +68,11 @@ const notesDictionaryFor = (octavalDivisions: number): Record<string, any> => {
     {}
   );
 };
+
+const notesInTemperament = computed(() => notesFor(divisionsPerOctave.value));
+
+const notesInTemperamentByPitch = computed(() => notesDictionaryFor(divisionsPerOctave.value));
+
 
 // For debugging purposes
 // @ts-expect-error - no property on window
@@ -91,6 +96,8 @@ export function useTemperament() {
     notesDictionary,
     notesFor,
     notesDictionaryFor,
+    notesInTemperament,
+    notesInTemperamentByPitch,
     Note,
     noteFromStepsAbove,
     distanceBetweenNotes,

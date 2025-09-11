@@ -13,8 +13,8 @@
 <script setup lang="ts">
 import { toRefs } from "vue";
 const props = withDefaults(defineProps<{
-  x?: number;
-  y?: number;
+  x: number | null;
+  y: number | null;
   height?: number | string;
 }>(), {
   x: 0,
