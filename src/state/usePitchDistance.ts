@@ -17,8 +17,6 @@ export function usePitchDistance() {
     notesDictionaryFor(divisionsPerOctave.value),
     ([, note]) => [note.frequency, {name: note.pitch, hz: note.frequency}]));
 
-    console.log('frequencyDict', frequencyDict.value);
-
   function findNearestNeighbor(targetPitch: number, dictionary: Record<string, any>): any {
     const pitches = sortedPitches.value;
     if (pitches.length === 0) return null;

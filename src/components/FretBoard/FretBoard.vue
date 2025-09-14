@@ -20,6 +20,7 @@ const {
   notesFor,
   notesDictionaryFor,
   notesInTemperamentByPitch,
+  notesDictionaryFor12Tet,
 } = useTemperament();
 const { shouldShow12TETFrets } = useFretBoardControls();
 const {
@@ -98,11 +99,10 @@ const rootFrequenciesByStringNumber = computed((): Record<string, number> => {
 });
 
 const stringNotes = computed((): Record<string, Record<string, any>> => {
-  const guideLineDivisions = shouldShow12TETFrets.value ? 12 : divisionsPerOctave.value;
-  const dict = notesDictionaryFor(guideLineDivisions);
+  const reference = shouldShow12TETFrets.value ? notesDictionaryFor12Tet : notesInTemperamentByPitch.value
   const stringRootFrequencies = objectMap(
     tuningByStringNumber.value,
-    (_, pitchName) => dict[pitchName].frequency
+    (_, pitchName) => reference[pitchName].frequency
   );
 
   const notesWithDistances = objectMap(stringRootFrequencies, (string, rootFrequency) =>
@@ -119,17 +119,19 @@ const stringNotes = computed((): Record<string, Record<string, any>> => {
   return notesWithDistances;
 });
 
+  const  lowestStringRootFrequency = computed(() => notesInTemperamentByPitch.value[tuningByStringNumber.value.string6]
+    .frequency);
+
 // Assumes an equal step temperament
 function fretDistancesFromNut (divisions = divisionsPerOctave.value) {
   // TODO: Add True Temperament Mode
   const lowestStringRootIndex = notesFor(divisions).findIndex(
     (note) => note.pitch === tuningByStringNumber.value.string6
   );
-  const lowestStringRootFrequency = notesDictionaryFor(divisions)[tuningByStringNumber.value.string6]
-    .frequency;
+
   const twoOctaves = notesFor(divisions)
     .slice(lowestStringRootIndex, lowestStringRootIndex + 2 * divisions)
-    .map((note) => noteYCoord(lowestStringRootFrequency, note.frequency));
+    .map((note) => noteYCoord(lowestStringRootFrequency.value, note.frequency));
 
   return twoOctaves;
 };

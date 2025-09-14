@@ -69,6 +69,9 @@ const notesDictionaryFor = (octavalDivisions: number): Record<string, any> => {
   );
 };
 
+// For reference, a 12-TET dictionary
+const notesDictionaryFor12Tet =  notesDictionaryFor(12);
+
 const notesInTemperament = computed(() => notesFor(divisionsPerOctave.value));
 
 const notesInTemperamentByPitch = computed(() => notesDictionaryFor(divisionsPerOctave.value));
@@ -107,5 +110,6 @@ export function useTemperament() {
     divisionsPerOctave,
     chooseTemperament,
     temperamentNames,
+    notesDictionaryFor12Tet,
   };
 }
