@@ -1,5 +1,74 @@
+<script setup lang="ts">
+import { useTemperament } from "@/state/temperament";
+const { chooseTemperament, chosenTemperamentName, temperamentNames } = useTemperament();
+
+import { useGuitar } from "@/state/guitar";
+import { useTone } from "@/effects/tone";
+import { useFretBoardControls } from "@/state/fretboard-controls";
+import { ref } from "vue";
+
+const { shouldShow12TETFrets } = useFretBoardControls();
+
+// import * as Tone from "tone";
+
+// const tempo = ref(120);
+
+const { changeTempo, tempo, isLooped, bps, playNoteSequence, stopPlayback } = useTone();
+
+const {
+  scaleNames,
+  selectScale,
+  selectedScaleName,
+  notesPerString,
+  selectNotesPerString,
+  startingFromFret,
+  scaleNotesOnStrings,
+} = useGuitar();
+const isPlayingSequence = ref(false);
+
+function playScale() {
+  isPlayingSequence.value = true;
+  const ascendingScale = Object.values(scaleNotesOnStrings.value)
+    .flat()
+    .map(({ note }, index) => ({
+      time: index / bps.value,
+      note: [note.frequency],
+    }));
+  const notesToPlay = [
+    ...ascendingScale,
+    ...ascendingScale
+      .slice()
+      .reverse()
+      .map(({ note }, index) => ({
+        time: (ascendingScale.length + index) / bps.value,
+        note,
+      })),
+  ];
+  const onEnd = () => (isPlayingSequence.value = false);
+
+  playNoteSequence(notesToPlay, onEnd);
+}
+
+function stopPlayingScale() {
+  isPlayingSequence.value = false;
+  stopPlayback();
+}
+</script>
+
+
+
 <template>
   <section>
+    <select @change="chooseTemperament(($event.target as HTMLSelectElement).value)">
+      <option
+        v-for="temperamentName in temperamentNames"
+        :key="temperamentName"
+        :value="temperamentName"
+        :selected="temperamentName === chosenTemperamentName"
+      >
+        {{ temperamentName }}
+      </option>
+    </select>
     <select @input="selectScale(($event.target as HTMLSelectElement).value)">
       <option
         v-for="scaleName in scaleNames"
@@ -72,57 +141,3 @@
     </label>
   </section>
 </template>
-
-<script setup lang="ts">
-import { useGuitar } from "@/state/guitar";
-import { useTone } from "@/effects/tone";
-import { useFretBoardControls } from "@/state/fretboard-controls";
-import { ref } from "vue";
-
-const { shouldShow12TETFrets } = useFretBoardControls();
-
-// import * as Tone from "tone";
-
-// const tempo = ref(120);
-
-const { changeTempo, tempo, isLooped, bps, playNoteSequence, stopPlayback } = useTone();
-
-const {
-  scaleNames,
-  selectScale,
-  selectedScaleName,
-  notesPerString,
-  selectNotesPerString,
-  startingFromFret,
-  scaleNotesOnStrings,
-} = useGuitar();
-const isPlayingSequence = ref(false);
-
-function playScale() {
-  isPlayingSequence.value = true;
-  const ascendingScale = Object.values(scaleNotesOnStrings.value)
-    .flat()
-    .map(({ note }, index) => ({
-      time: index / bps.value,
-      note: [note.frequency],
-    }));
-  const notesToPlay = [
-    ...ascendingScale,
-    ...ascendingScale
-      .slice()
-      .reverse()
-      .map(({ note }, index) => ({
-        time: (ascendingScale.length + index) / bps.value,
-        note,
-      })),
-  ];
-  const onEnd = () => (isPlayingSequence.value = false);
-
-  playNoteSequence(notesToPlay, onEnd);
-}
-
-function stopPlayingScale() {
-  isPlayingSequence.value = false;
-  stopPlayback();
-}
-</script>

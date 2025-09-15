@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import TabChord from "@/components/TabChord.vue";
-import FretBoard from "@/components/FretBoard/FretBoard.vue";
-import PitchDetector from "@/components/PitchDetector.vue";
+
 import ArrowIcon from "@/components/icons/ArrowIcon.vue";
 // import PencilIcon from "@/components/icons/PencilIcon.vue";
 import PlusIcon from "@/components/icons/PlusIcon.vue";
@@ -10,9 +9,7 @@ import TrashIcon from "@/components/icons/TrashIcon.vue";
 import UploadIcon from "@/components/icons/UploadIcon.vue";
 import DownloadIcon from "@/components/icons/DownloadIcon.vue";
 import { useChords } from "@/state/chord";
-import { useTemperament } from "@/state/temperament";
 
-const { chooseTemperament, chosenTemperamentName, temperamentNames } = useTemperament();
 const { chords, playChords, addChord, removeChord } = useChords();
 const isUploadInputShown = ref(false);
 const uploader = ref<HTMLInputElement | null>(null);
@@ -46,22 +43,6 @@ function receivedText(e: Event) {
 </script>
 
 <template>
-  <select @change="chooseTemperament(($event.target as HTMLSelectElement).value)">
-    <option
-      v-for="temperamentName in temperamentNames"
-      :key="temperamentName"
-      :value="temperamentName"
-      :selected="temperamentName === chosenTemperamentName"
-    >
-      {{ temperamentName }}
-    </option>
-  </select>
-  <Suspense>
-    <FretBoard />
-  </Suspense>
-  <Suspense>
-    <PitchDetector />
-  </Suspense>
   <main>
     <div
       v-for="chord in chords"

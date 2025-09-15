@@ -18,7 +18,6 @@ const {
   pitchClassNames,
   divisionsPerOctave,
   notesFor,
-  notesDictionaryFor,
   notesInTemperamentByPitch,
   notesDictionaryFor12Tet,
 } = useTemperament();
@@ -72,7 +71,7 @@ function distanceForFrequency (stringRootFrequency: number, noteFrequency: numbe
 }
 
 function noteYCoord (stringRootFrequency: number, noteFrequency: number) {
-  return 1.775 * // not sure why this number is magic
+  return 1.775 * // not sure why this number is magic 71/40
   (fretboardLengthPx -
     mapValueToRange(
       distanceForFrequency(stringRootFrequency, noteFrequency),
@@ -113,8 +112,6 @@ const stringNotes = computed((): Record<string, Record<string, any>> => {
       noteY: noteYCoord(rootFrequency, note.frequency),
     }))
   );
-
-  console.log({ stringNotes: notesWithDistances });
 
   return notesWithDistances;
 });
