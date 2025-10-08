@@ -7,7 +7,10 @@ import * as Tone from "tone";
 
 import type { GuitarChord, StringNumber } from "../definitions/types";
 
-const { stringQuantity, tuning } = useGuitar();
+import { useTuning } from './tuning'
+
+const { TUNING } = useTuning();
+const { stringQuantity } = useGuitar();
 const { notes, noteFromStepsAbove } = useTemperament();
 
 
@@ -47,13 +50,13 @@ export function useChords() {
     return Object.entries(chord)
       .filter(([key, fret]) => key !== "id" && fret !== null)
       .map(([stringName, fret]: [string, string | number | null]) =>
-        noteFromStepsAbove(tuning.value[stringName as StringNumber], Number(fret))
+        noteFromStepsAbove((TUNING.value as any)[
+          stringName as StringNumber], Number(fret))
       );
   }
 
   function chordPitches(chord: GuitarChord) {
     const notesInChord = chordNotes(chord);
-    console.log(notesInChord);
     return notesInChord.map(
       (note) =>
         notes.value.find((noteToMatch) => note === noteToMatch.pitch)?.frequency
