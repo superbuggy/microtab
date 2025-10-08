@@ -1,6 +1,7 @@
 <template v-if="x !== NaN && y !== NaN">
   <svg>
     <foreignObject
+      v-if="typeof x === 'number' && typeof y === 'number'"
       :x="x"
       :y="y"
       :height="height"
