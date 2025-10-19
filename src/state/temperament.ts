@@ -86,7 +86,7 @@ window.Note = Note.value;
 const divisionsPerOctave = computed(
   () =>
     ({
-      // "12 TET": 12,
+      "12 TET": 12,
       "16 TET": 16,
       "17 TET": 17,
       "24 TET": 24,

@@ -1,6 +1,6 @@
 import { computed } from "vue";
 import { useTemperament } from "../state/temperament";
-// import { scalarIntervallicDistances12EDO } from "./12-tet-scalar-intervals"
+import { scalarIntervallicDistances12EDO } from "./12-tet-scalar-intervals"
 import { scalarIntervallicDistances16EDO } from "./16-tet-scalar-intervals";
 import { scalarIntervallicDistances17EDO } from "./17-tet-scalar-intervals";
 import { scalarIntervallicDistances24EDO } from "./24-tet-scalar-intervals";
@@ -10,7 +10,7 @@ import { PitchClass } from "./types";
 const { chosenTemperamentName, notes, noteNames, pitchClassNames } =
   useTemperament();
 const intervallicDistancesForTemperaments: Record<string, Record<string, number[]>> = {
-  // "12 TET": scalarIntervallicDistances12EDO,
+  "12 TET": scalarIntervallicDistances12EDO,
   "16 TET": scalarIntervallicDistances16EDO,
   "17 TET": scalarIntervallicDistances17EDO,
   "24 TET": scalarIntervallicDistances24EDO,
