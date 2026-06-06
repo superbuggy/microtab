@@ -4,13 +4,14 @@ import {
   tet16schema,
   tet17schema,
   tet24schema,
+  tet31schema,
 } from "../definitions/temperaments";
 
 import { TET, noteInTET } from "../definitions/TET";
 import { setKeyIn } from "../helpers";
 import type { PitchName, SupportedEDOs, TetSchema } from "../definitions/types";
 
-const schemas = [tet12schema, tet16schema, tet17schema, tet24schema];
+const schemas = [tet12schema, tet16schema, tet17schema, tet24schema, tet31schema];
 const equalTemperaments = schemas.map((schema) => new TET(schema));
 const temperaments = Object.fromEntries(
   equalTemperaments.map((temperament) => [temperament.name, temperament])
@@ -90,6 +91,7 @@ const divisionsPerOctave = computed(
       "16 TET": 16,
       "17 TET": 17,
       "24 TET": 24,
+      "31 TET": 31,
     }[chosenTemperamentName.value]) as SupportedEDOs
 );
 export function useTemperament() {

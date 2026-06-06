@@ -4,6 +4,7 @@ import { scalarIntervallicDistances12EDO } from "./12-tet-scalar-intervals"
 import { scalarIntervallicDistances16EDO } from "./16-tet-scalar-intervals";
 import { scalarIntervallicDistances17EDO } from "./17-tet-scalar-intervals";
 import { scalarIntervallicDistances24EDO } from "./24-tet-scalar-intervals";
+import { scalarIntervallicDistances31EDO } from "./31-tet-scalar-intervals";
 import { sum } from "../helpers";
 import { PitchClass } from "./types";
 
@@ -14,6 +15,7 @@ const intervallicDistancesForTemperaments: Record<string, Record<string, number[
   "16 TET": scalarIntervallicDistances16EDO,
   "17 TET": scalarIntervallicDistances17EDO,
   "24 TET": scalarIntervallicDistances24EDO,
+  "31 TET": scalarIntervallicDistances31EDO,
 };
 const intervallicDistancesForChosenTemperament = computed(
   () => intervallicDistancesForTemperaments[chosenTemperamentName.value]
