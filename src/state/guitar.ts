@@ -33,9 +33,11 @@ const selectedScaleName = ref("Ionian");
 const selectedScale = computed(() => scales.value[selectedScaleName.value]);
 
 const defaultScalesPerTet = {
+  12: "Ionian [7]",
   16: "Rank 3 Minor [7] A",
   17: "Otonal 17",
   24: "Ionian",
+  31: "Ionian [7]",
 };
 
 watch(divisionsPerOctave, (perOctave: SupportedEDOs) => {

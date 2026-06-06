@@ -28,7 +28,7 @@ export type TetSchema = {
 
 export type PitchMap = Record<string, number>;
 
-export type SupportedEDOs = 16 | 17 | 24;
+export type SupportedEDOs = 16 | 17 | 24 | 31;
 
 export type Key = string | number;
 export type Dict = Record<Key, any>;

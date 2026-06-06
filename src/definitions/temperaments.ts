@@ -133,3 +133,52 @@ export const tet17schema: TetSchema = {
     B: ["C", Math.round(1129.41)],
   },
 };
+
+// 31 TET (tricesimoprimal). Step = 1200 / 31 ≈ 38.71 cents.
+// Names follow Ron Sword's standard meantone notation (whole tone = 5 steps,
+// diatonic semitone = 3, chromatic semitone = 2; #/b = ±2, x/bb = ±4).
+// temperament.js has a bug in the check to see if a note has been defined
+// conflictually--Math.round workaround (see 17 TET above).
+const step31 = (steps: number): [string, number] => ["C", Math.round((1200 * steps) / 31)];
+export const tet31schema: TetSchema = {
+  name: "31 TET",
+  description: "31-tone equal temperament (tricesimoprimal).",
+  source: "https://en.xen.wiki/w/31edo",
+  referenceName: referenceName.value,
+  referencePitch: referencePitch.value,
+  referenceOctave: 0,
+  octaveBaseName: "C",
+  notes: {
+    C: step31(0),
+    Dbb: step31(1),
+    "C#": step31(2),
+    Db: step31(3),
+    Cx: step31(4),
+    D: step31(5),
+    Ebb: step31(6),
+    "D#": step31(7),
+    Eb: step31(8),
+    Dx: step31(9),
+    E: step31(10),
+    Fb: step31(11),
+    "E#": step31(12),
+    F: step31(13),
+    Gbb: step31(14),
+    "F#": step31(15),
+    Gb: step31(16),
+    Fx: step31(17),
+    G: step31(18),
+    Abb: step31(19),
+    "G#": step31(20),
+    Ab: step31(21),
+    Gx: step31(22),
+    A: step31(23),
+    Bbb: step31(24),
+    "A#": step31(25),
+    Bb: step31(26),
+    Ax: step31(27),
+    B: step31(28),
+    Cb: step31(29),
+    "B#": step31(30),
+  },
+};
