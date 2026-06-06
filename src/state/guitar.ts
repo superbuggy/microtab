@@ -47,6 +47,13 @@ watch(divisionsPerOctave, (perOctave: SupportedEDOs) => {
 
 const notesPerString = ref<number | null>(3);
 
+// The fretboard renders this many octaves (see `endingFret` in FretBoard.vue),
+// so scan the same span when deciding which notes to highlight. Previously this
+// was hardcoded to 48 (two octaves of 24-TET only), which silently produced the
+// wrong range for every other temperament.
+const FRETTED_OCTAVES = 2; // spans the two octaves the fretboard renders
+const frettableFretSpan = computed(() => FRETTED_OCTAVES * divisionsPerOctave.value);
+
 type FretNote = { note: Note; fretNumber: number };
 
 export function useGuitar() {
@@ -112,30 +119,34 @@ export function useGuitar() {
             startingNoteOnString
           )
         : 0;
-      const stringScale = scaleForGuitar(offset, offset + 48).map(
+      const stringScale = scaleForGuitar(offset, offset + frettableFretSpan.value).map(
         ({ note, fretNumber }) => ({
           note,
           fretNumber: fretNumber + startingFromFret.value,
         })
       );
 
-      guitar[stringNumber as StringNumber] = notesPerString.value
-        ? stringScale
-            .filter(({ fretNumber }) => {
-              if (!guitar[previousStringNumber]) return true;
-              // if (!guitar[previousStringNumber].at(-1)) return false;
-              // if (!guitar[previousStringNumber].at(-1)?.fretNumber) return false;
-              if (notesPerString.value) {
-                const lastNoteOnPriorString = guitar[previousStringNumber].at(-1);
-                if (!lastNoteOnPriorString) return false;
-                return (
-                  // UGH
-                  lastNoteOnPriorString.fretNumber < (fretNumber + distanceBetweenStrings)
-                );
-              }
-            })
-            .slice(0, notesPerString.value)
-        : stringScale;
+      if (!notesPerString.value) {
+        guitar[stringNumber as StringNumber] = stringScale;
+        continue;
+      }
+
+      const priorString = guitar[previousStringNumber];
+      const lastNoteOnPriorString = priorString?.at(-1);
+
+      guitar[stringNumber as StringNumber] = stringScale
+        .filter(({ fretNumber }) => {
+          // The lowest string has no prior string to anchor against, so it
+          // simply starts from the open position.
+          if (!priorString) return true;
+          if (!lastNoteOnPriorString) return false;
+          // Keep notes pitched above the last note used on the prior string so
+          // the pattern keeps climbing the neck. A note here sounds the same as
+          // fret (fretNumber + distanceBetweenStrings) on the prior string, so
+          // that's what we compare against.
+          return lastNoteOnPriorString.fretNumber < fretNumber + distanceBetweenStrings;
+        })
+        .slice(0, notesPerString.value);
     }
     return guitar;
   });
