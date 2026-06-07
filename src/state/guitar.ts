@@ -2,6 +2,8 @@ import type { GuitarTuning, PitchName, StringNumber, Note, Dict } from '@/defini
 import { watch, ref, computed } from "vue";
 import { useScales } from "@/definitions/scales";
 import { buildPatternScale } from "@/definitions/pattern-scale";
+import { layoutScaleOnStrings } from "@/definitions/fretboard-layout";
+import { buildPlaybackSequence } from "@/definitions/playback-sequence";
 import { useTemperament } from "./temperament";
 import { useTuning } from "./tuning";
 import { PitchClass } from "@/definitions/types";
@@ -123,50 +125,7 @@ const notesPerString = ref<number | null>(3);
 const FRETTED_OCTAVES = 2; // spans the two octaves the fretboard renders
 const frettableFretSpan = computed(() => FRETTED_OCTAVES * divisionsPerOctave.value);
 
-type FretNote = { note: Note; fretNumber: number };
-
 export function useGuitar() {
-  const initializedGuitarNotes = (): Record<StringNumber, FretNote[]> =>
-    Object.fromEntries(
-      stringNumbers.map((stringNumber) => [`string${stringNumber}`, []])
-    );
-
-  const scaleForGuitar = (startingNoteNameIndex: number, endingNoteNameIndex: number) => {
-    return ((selectedScale.value.notes) as Note[])
-      .filter(
-        (note) =>
-          startingNoteNameIndex + noteNames.value.indexOf(lowestNote.value) <=
-            note.absolutePitchNumber &&
-          note.absolutePitchNumber <=
-            endingNoteNameIndex + noteNames.value.indexOf(lowestNote.value)
-      )
-      .map((note) => ({
-        note,
-        fretNumber:
-          note.absolutePitchNumber -
-          noteNames.value.indexOf(lowestNote.value) -
-          startingNoteNameIndex,
-      }));
-  };
-  // const scaleForGuitar = (startingNoteNameIndex, endingNoteNameIndex) => {
-  //   return selectedScale.value.notes
-  //     .filter(
-  //       (note) =>
-  //         startingNoteNameIndex + noteNames.value.indexOf(lowestNote) <=
-  //           note.absolutePitchNumber &&
-  //         note.absolutePitchNumber <=
-  //           endingNoteNameIndex + noteNames.value.indexOf(lowestNote)
-  //     )
-  //     .reduce((stringNotes, note) => {
-  //       const fretNumber =
-  //         note.absolutePitchNumber -
-  //         noteNames.value.indexOf(lowestNote) -
-  //         startingNoteNameIndex;
-  //       stringNotes[fretNumber] = note;
-  //       return stringNotes;
-  //     }, {});
-  // };
-
   const selectNotesPerString = (perString: string) => {
     notesPerString.value = perString === "All" ? null : Number(perString);
   };
@@ -203,54 +162,23 @@ export function useGuitar() {
     }
   };
 
-  const fretboardScale = computed(() => {
-    const guitar = initializedGuitarNotes();
-    for (const stringNumber in guitar) {
-      const startingNoteOnString = tuningByStringNumber.value[stringNumber as StringNumber];
-      const offset = distanceBetweenNotes(lowestNote.value, startingNoteOnString);
-      const previousStringNumber = stringNumber.replace(/\d/, (n) => `${+n + 1}`) as StringNumber;
-
-      const distanceBetweenStrings = guitar[previousStringNumber]
-        ? distanceBetweenNotes(
-            tuningByStringNumber.value[previousStringNumber as StringNumber],
-            startingNoteOnString
-          )
-        : 0;
-      const stringScale = scaleForGuitar(offset, offset + frettableFretSpan.value).map(
-        ({ note, fretNumber }) => ({
-          note,
-          fretNumber: fretNumber + startingFromFret.value,
-        })
-      );
-
-      if (!notesPerString.value) {
-        guitar[stringNumber as StringNumber] = stringScale;
-        continue;
-      }
-
-      const priorString = guitar[previousStringNumber];
-      const lastNoteOnPriorString = priorString?.at(-1);
-
-      guitar[stringNumber as StringNumber] = stringScale
-        .filter(({ fretNumber }) => {
-          // The lowest string has no prior string to anchor against, so it
-          // simply starts from the open position.
-          if (!priorString) return true;
-          if (!lastNoteOnPriorString) return false;
-          // Keep notes pitched above the last note used on the prior string so
-          // the pattern keeps climbing the neck. A note here sounds the same as
-          // fret (fretNumber + distanceBetweenStrings) on the prior string, so
-          // that's what we compare against.
-          return lastNoteOnPriorString.fretNumber < fretNumber + distanceBetweenStrings;
-        })
-        .slice(0, notesPerString.value);
-    }
-    return guitar;
-  });
+  const fretboardScale = computed(() =>
+    layoutScaleOnStrings({
+      scaleNotes: selectedScale.value.notes as Note[],
+      tuning: tuningByStringNumber.value,
+      stringNumbers,
+      noteNames: noteNames.value,
+      lowestNote: lowestNote.value,
+      frettableFretSpan: frettableFretSpan.value,
+      startingFromFret: startingFromFret.value,
+      notesPerString: notesPerString.value,
+      distanceBetweenNotes,
+    })
+  );
 
   const scaleNotesOnStrings = computed((): Dict => fretboardScale.value);
 
-  // Turn a generated pattern's walk into an ordered, playable note sequence so
+ // Turn a generated pattern's walk into an ordered, playable note sequence so
   // playback follows the pattern instead of ascending pitch. Each entry carries
   // a frequency to sound and, when a matching fretboard dot is rendered, the
   // element id to highlight. Returns null for non-pattern scales, which keep
@@ -260,37 +188,13 @@ export function useGuitar() {
     const current = selectedScale.value as
       | { sequence?: number[] }
       | undefined;
-    const offsets = current?.sequence;
-    if (!offsets) return null;
-
-    // Map each rendered note's absolute pitch to its dot id so the sequence can
-    // highlight a fretted note when one exists at that pitch.
-    const idByPitchNumber: Record<number, string> = {};
-    for (const [stringNumber, notes] of Object.entries(
-      scaleNotesOnStrings.value
-    )) {
-      for (const { note } of notes as { note: Note }[]) {
-        if (!(note.absolutePitchNumber in idByPitchNumber)) {
-          idByPitchNumber[
-            note.absolutePitchNumber
-          ] = `note-${stringNumber}-${note.frequency}-hz`;
-        }
-      }
-    }
-
-    const rootIndex = noteNames.value.indexOf(lowestNote.value);
-
-    return offsets
-      .map((offset): PlaybackEvent | null => {
-        const pitchIndex = rootIndex + offset;
-        const pitchName = noteNames.value[pitchIndex];
-        const frequency = pitchName
-          ? notesInTemperamentByPitch.value[pitchName]?.frequency
-          : undefined;
-        if (frequency == null) return null;
-        return { note: [frequency], id: idByPitchNumber[pitchIndex] };
-      })
-      .filter((event): event is PlaybackEvent => event !== null);
+    return buildPlaybackSequence({
+      offsets: current?.sequence,
+      lowestNote: lowestNote.value,
+      noteNames: noteNames.value,
+      notesInTemperamentByPitch: notesInTemperamentByPitch.value,
+      scaleNotesOnStrings: fretboardScale.value,
+    });
   });
 
   selectScale(selectedScaleName.value);
