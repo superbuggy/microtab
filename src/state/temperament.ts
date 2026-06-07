@@ -1,111 +1,27 @@
-import { computed, ref } from "vue";
-import {
-  tet12schema,
-  tet16schema,
-  tet17schema,
-  tet24schema,
-  tet31schema,
-} from "../definitions/temperaments";
+// Backward-compatible wrapper: re-exports from the Pinia store
+import { useTemperamentStore } from "@/stores/temperament";
 
-import { TET, noteInTET } from "../definitions/TET";
-import { setKeyIn } from "../helpers";
-import type { PitchName, SupportedEDOs, TetSchema } from "../definitions/types";
-
-const schemas = [tet12schema, tet16schema, tet17schema, tet24schema, tet31schema];
-const equalTemperaments = schemas.map((schema) => new TET(schema));
-const temperaments = Object.fromEntries(
-  equalTemperaments.map((temperament) => [temperament.name, temperament])
-);
-
-const temperamentNames = Object.keys(temperaments);
-const chosenTemperamentName = ref(temperamentNames[3]);
-const chosenTemperament = computed(
-  () => temperaments[chosenTemperamentName.value]
-);
-const chooseTemperament = (temperamentName: string) => {
-  chosenTemperamentName.value = temperamentName;
-};
-
-const Note = computed(() => noteInTET(chosenTemperament.value));
-
-const noteFromStepsAbove = (referenceNoteName: string, stepsAbove: number) =>
-  chosenTemperament.value.noteFromStepsAbove(referenceNoteName, stepsAbove);
-
-const distanceBetweenNotes = (lowerNote: PitchName, higherNote: PitchName) =>
-  chosenTemperament.value.distanceBetweenNotes(lowerNote, higherNote);
-
-const noteNames = computed(() => chosenTemperament.value.pitchNames);
-const pitchClassNames = computed(() => chosenTemperament.value.pitchClassNames);
-
-const notes = computed(() =>
-  chosenTemperament.value.pitchNames.map(
-    (pitchName) => new Note.value(pitchName)
-  )
-);
-const notesDictionary = computed(() =>
-  notes.value.reduce(
-    (dictionary, note) => setKeyIn(dictionary, note.pitch, note),
-    {}
-  )
-);
-
-const temperamentFor = (octavalDivisions: number) => {
-  const name = schemas.find((schema: TetSchema) => schema.name.includes(`${octavalDivisions}`))?.name;
-  if (!name) throw new Error(`Temperament not found for ${octavalDivisions} TET  `);
-  // console.log(name, temperaments[name]);  
-  return temperaments[name];
-};
-
-const notesFor = (octavalDivisions: number) => {
-  const temperament = temperaments[`${octavalDivisions} TET`];
-  const TETNote = noteInTET(temperament);
-  return temperamentFor(octavalDivisions).pitchNames.map(
-    (pitchName) => new TETNote(pitchName)
-  );
-};
-const notesDictionaryFor = (octavalDivisions: number): Record<string, any> => {
-  return notesFor(octavalDivisions).reduce(
-    (dictionary, note) => setKeyIn(dictionary, note.pitch, note),
-    {}
-  );
-};
-
-// For reference, a 12-TET dictionary
-const notesDictionaryFor12Tet =  notesDictionaryFor(12);
-
-const notesInTemperament = computed(() => notesFor(divisionsPerOctave.value));
-
-const notesInTemperamentByPitch = computed(() => notesDictionaryFor(divisionsPerOctave.value));
-
-
-const divisionsPerOctave = computed(
-  () =>
-    ({
-      "12 TET": 12,
-      "16 TET": 16,
-      "17 TET": 17,
-      "24 TET": 24,
-      "31 TET": 31,
-    }[chosenTemperamentName.value]) as SupportedEDOs
-);
 export function useTemperament() {
+  const store = useTemperamentStore();
   return {
-    noteNames,
-    notes,
-    notesDictionary,
-    notesFor,
-    notesDictionaryFor,
-    notesInTemperament,
-    notesInTemperamentByPitch,
-    Note,
-    noteFromStepsAbove,
-    distanceBetweenNotes,
-    pitchClassNames,
-    chosenTemperamentName,
-    chosenTemperament,
-    divisionsPerOctave,
-    chooseTemperament,
-    temperamentNames,
-    notesDictionaryFor12Tet,
+    noteNames: store.noteNames,
+    notes: store.notes,
+    notesDictionary: store.notesDictionary,
+    notesFor: store.notesFor,
+    notesDictionaryFor: store.notesDictionaryFor,
+    notesInTemperament: store.notesInTemperament,
+    notesInTemperamentByPitch: store.notesInTemperamentByPitch,
+    Note: store.Note,
+    noteFromStepsAbove: store.noteFromStepsAbove,
+    distanceBetweenNotes: store.distanceBetweenNotes,
+    pitchClassNames: store.pitchClassNames,
+    chosenTemperamentName: store.chosenTemperamentName,
+    chosenTemperament: store.chosenTemperament,
+    divisionsPerOctave: store.divisionsPerOctave,
+    chooseTemperament: store.chooseTemperament,
+    temperamentNames: store.temperamentNames,
+    notesDictionaryFor12Tet: store.notesDictionaryFor12Tet,
   };
 }
+
+export { useTemperamentStore };

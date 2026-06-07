@@ -1,220 +1,26 @@
-import type { GuitarTuning, PitchName, StringNumber, Note, Dict } from '@/definitions/types';
-import { watch, ref, computed } from "vue";
-import { useScales } from "@/definitions/scales";
-import { buildPatternScale } from "@/definitions/pattern-scale";
-import { layoutScaleOnStrings } from "@/definitions/fretboard-layout";
-import { buildPlaybackSequence } from "@/definitions/playback-sequence";
-import { useTemperament } from "./temperament";
-import { useTuning } from "./tuning";
-import { PitchClass } from "@/definitions/types";
-const { TUNING } = useTuning();
-
-const { scaleNames, scalesFor } = useScales();
-const {
-  distanceBetweenNotes,
-  noteNames,
-  divisionsPerOctave,
-  notesInTemperament,
-  notesInTemperamentByPitch,
-  notesDictionaryFor12Tet,
-} = useTemperament();
-
-const DEFAULT_STRING_QUANTITY = 6;
-// const TUNING = ["B1", "E2", "A2", "D3", "F#3", "B3"];
-
-const stringQuantity = ref(DEFAULT_STRING_QUANTITY);
-const stringNumbers = Array.from({ length: stringQuantity.value }).map(
-  (_, index, { length }) => length - index
-);
-// The tuning is spelled in 12-TET note names, but not every temperament
-// defines the same enharmonic spellings (e.g. 17-TET has no D#, only Eb).
-// Resolve each tuning pitch to whatever the active temperament calls the
-// nearest pitch so any tuning works in any temperament.
-const nearestPitchInTemperament = (targetFrequency: number): PitchName =>
-  notesInTemperament.value.reduce((nearest, note) =>
-    Math.abs(note.frequency - targetFrequency) <
-    Math.abs(nearest.frequency - targetFrequency)
-      ? note
-      : nearest
-  ).pitch;
-
-const resolveTuningPitch = (pitchName: PitchName): PitchName => {
-  if (notesInTemperamentByPitch.value[pitchName]) return pitchName;
-  const target = notesDictionaryFor12Tet[pitchName]?.frequency;
-  return target == null ? pitchName : nearestPitchInTemperament(target);
-};
-
-const tuningByStringNumber = computed<GuitarTuning>(() =>
-  Object.fromEntries(
-    stringNumbers.map((stringNumber, index) => [
-      `string${stringNumber}`,
-      resolveTuningPitch(TUNING.value[index]),
-    ])
-  )
-);
-// The raw, 12-TET-spelled tuning keyed by string. Used by the "12-TET guides"
-// overlay, which references the 12-TET note dictionary and therefore needs the
-// canonical 12-TET spelling rather than the active temperament's resolution.
-const tuningByStringNumber12Tet = computed<GuitarTuning>(() =>
-  Object.fromEntries(
-    stringNumbers.map((stringNumber, index) => [
-      `string${stringNumber}`,
-      TUNING.value[index],
-    ])
-  )
-);
-const startingFromFret = ref(0);
-
-// Reactive lowest note: re-evaluates whenever tuningByStringNumber changes.
-const lowestNote = computed<PitchName>(
-  () => tuningByStringNumber.value[`string${stringNumbers[0]}`]
-);
-
-const scales = ref<Record<string, any>>({});
-const selectedScaleName = ref("Ionian");
-
-// Scales generated from an interval pattern at runtime. Kept separate from the
-// built-in scale set so they can be merged into the picker and cleared when the
-// temperament changes (their notes are tied to the temperament active at build
-// time).
-const customScales = ref<Record<string, any>>({});
-const patternError = ref("");
-
-const selectedScale = computed(() => scales.value[selectedScaleName.value]);
-
-// The number of steps spanned by the fretboard, from the lowest string's root
-// up to the highest reachable note (highest string root plus the rendered fret
-// span). A generated pattern's walk is extended to cover this so it repeats
-// across the whole neck rather than stopping at the first octave.
-const fretboardSpanSteps = (): number => {
-  const rootIndex = noteNames.value.indexOf(lowestNote.value);
-  const highestStringRoot =
-    tuningByStringNumber.value[`string${stringNumbers.at(-1)}` as StringNumber];
-  const highestIndex =
-    noteNames.value.indexOf(highestStringRoot) + frettableFretSpan.value;
-  return Math.max(highestIndex - rootIndex, divisionsPerOctave.value);
-};
-
-const allScaleNames = computed(() => [
-  ...scaleNames.value,
-  ...Object.keys(customScales.value),
-]);
-
-const defaultScalesPerTet = {
-  12: "Ionian [7]",
-  16: "Rank 3 Minor [7] A",
-  17: "Otonal 17",
-  24: "Ionian",
-  31: "Ionian [7]",
-};
-
-watch([divisionsPerOctave, lowestNote], ([perOctave, currentLowestNote]) => {
-  selectedScaleName.value = defaultScalesPerTet[perOctave];
-  // Pattern scales hold notes tied to the previous temperament, so drop them.
-  customScales.value = {};
-  patternError.value = "";
-  scales.value = scalesFor(currentLowestNote.replace(/\d/, "") as PitchClass);
-});
-
-const notesPerString = ref<number | null>(3);
-
-// The fretboard renders this many octaves (see `endingFret` in FretBoard.vue),
-// so scan the same span when deciding which notes to highlight. Previously this
-// was hardcoded to 48 (two octaves of 24-TET only), which silently produced the
-// wrong range for every other temperament.
-const FRETTED_OCTAVES = 2; // spans the two octaves the fretboard renders
-const frettableFretSpan = computed(() => FRETTED_OCTAVES * divisionsPerOctave.value);
+// Backward-compatible wrapper: re-exports from the Pinia store
+import { useGuitarStore } from "@/stores/guitar";
 
 export function useGuitar() {
-  const selectNotesPerString = (perString: string) => {
-    notesPerString.value = perString === "All" ? null : Number(perString);
-  };
-
-  const selectScale = (scaleName: string) => {
-    selectedScaleName.value = scaleName;
-  };
-
-  // Parse an interval pattern into a scale, add it to the pickable scale set,
-  // and select it. Parse failures are surfaced via `patternError`.
-  const addPatternScale = (input: string) => {
-    patternError.value = "";
-    const name = input.trim();
-    if (!name) {
-      patternError.value = "Pattern is empty.";
-      return;
-    }
-    try {
-      const rootNoteName = lowestNote.value.replace(/\d/, "") as PitchClass;
-      // Use the consolidated buildPatternScale which handles parse→walk→notes pipeline
-      const built = buildPatternScale(
-        name,
-        rootNoteName,
-        divisionsPerOctave.value,
-        noteNames.value,
-        notesInTemperament.value,
-        fretboardSpanSteps()
-      );
-      customScales.value = { ...customScales.value, [name]: built };
-      scales.value = { ...scales.value, [name]: built } as typeof scales.value;
-      selectScale(name);
-    } catch (error) {
-      patternError.value = (error as Error).message;
-    }
-  };
-
-  const fretboardScale = computed(() =>
-    layoutScaleOnStrings({
-      scaleNotes: selectedScale.value.notes as Note[],
-      tuning: tuningByStringNumber.value,
-      stringNumbers,
-      noteNames: noteNames.value,
-      lowestNote: lowestNote.value,
-      frettableFretSpan: frettableFretSpan.value,
-      startingFromFret: startingFromFret.value,
-      notesPerString: notesPerString.value,
-      distanceBetweenNotes,
-    })
-  );
-
-  const scaleNotesOnStrings = computed((): Dict => fretboardScale.value);
-
- // Turn a generated pattern's walk into an ordered, playable note sequence so
-  // playback follows the pattern instead of ascending pitch. Each entry carries
-  // a frequency to sound and, when a matching fretboard dot is rendered, the
-  // element id to highlight. Returns null for non-pattern scales, which keep
-  // the default ascending/descending playback.
-  type PlaybackEvent = { note: number[]; id?: string };
-  const generatedPlaybackSequence = computed<PlaybackEvent[] | null>(() => {
-    const current = selectedScale.value as
-      | { sequence?: number[] }
-      | undefined;
-    return buildPlaybackSequence({
-      offsets: current?.sequence,
-      lowestNote: lowestNote.value,
-      noteNames: noteNames.value,
-      notesInTemperamentByPitch: notesInTemperamentByPitch.value,
-      scaleNotesOnStrings: fretboardScale.value,
-    });
-  });
-
-  selectScale(selectedScaleName.value);
-
+  const store = useGuitarStore();
   return {
-    stringQuantity,
-    divisionsPerOctave,
-    tuningByStringNumber,
-    tuningByStringNumber12Tet,
-    stringNumbers,
-    scaleNotesOnStrings,
-    scaleNames: allScaleNames,
-    selectScale,
-    addPatternScale,
-    patternError,
-    generatedPlaybackSequence,
-    selectedScaleName,
-    selectedScale,
-    notesPerString,
-    selectNotesPerString,
-    startingFromFret,
+    stringQuantity: store.stringQuantity,
+    divisionsPerOctave: store.divisionsPerOctave,
+    tuningByStringNumber: store.tuningByStringNumber,
+    tuningByStringNumber12Tet: store.tuningByStringNumber12Tet,
+    stringNumbers: store.stringNumbers,
+    scaleNotesOnStrings: store.scaleNotesOnStrings,
+    scaleNames: store.allScaleNames,
+    selectScale: store.selectScale,
+    addPatternScale: store.addPatternScale,
+    patternError: store.patternError,
+    generatedPlaybackSequence: store.generatedPlaybackSequence,
+    selectedScaleName: store.selectedScaleName,
+    selectedScale: store.selectedScale,
+    notesPerString: store.notesPerString,
+    selectNotesPerString: store.selectNotesPerString,
+    startingFromFret: store.startingFromFret,
   };
 }
+
+export { useGuitarStore };
