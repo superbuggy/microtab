@@ -4,7 +4,7 @@ import { useScales } from "@/definitions/scales";
 import { patternWalk } from "@/definitions/interval-pattern";
 import { useTemperament } from "./temperament";
 import { useTuning } from "./tuning";
-import { SupportedEDOs, PitchClass } from "@/definitions/types";
+import { PitchClass } from "@/definitions/types";
 const { TUNING } = useTuning();
 
 const { scaleNames, scalesFor, scaleFromPattern } = useScales();
@@ -63,8 +63,13 @@ const tuningByStringNumber12Tet = computed<GuitarTuning>(() =>
   )
 );
 const startingFromFret = ref(0);
-const lowestNote: PitchName = tuningByStringNumber.value[`string${stringNumbers[0]}`];
-const scales = ref(scalesFor(lowestNote.replace(/\d/, "") as PitchClass));
+
+// Reactive lowest note: re-evaluates whenever tuningByStringNumber changes.
+const lowestNote = computed<PitchName>(
+  () => tuningByStringNumber.value[`string${stringNumbers[0]}`]
+);
+
+const scales = ref<Record<string, any>>({});
 const selectedScaleName = ref("Ionian");
 
 // Scales generated from an interval pattern at runtime. Kept separate from the
@@ -81,7 +86,7 @@ const selectedScale = computed(() => scales.value[selectedScaleName.value]);
 // span). A generated pattern's walk is extended to cover this so it repeats
 // across the whole neck rather than stopping at the first octave.
 const fretboardSpanSteps = (): number => {
-  const rootIndex = noteNames.value.indexOf(lowestNote);
+  const rootIndex = noteNames.value.indexOf(lowestNote.value);
   const highestStringRoot =
     tuningByStringNumber.value[`string${stringNumbers.at(-1)}` as StringNumber];
   const highestIndex =
@@ -94,7 +99,7 @@ const fretboardSpanSteps = (): number => {
 // renders these directly, which means it only shows notes that are actually
 // played (no octave-tiled positions the walk never reaches).
 const patternNotesFromSequence = (sequence: number[]): Note[] => {
-  const rootIndex = noteNames.value.indexOf(lowestNote);
+  const rootIndex = noteNames.value.indexOf(lowestNote.value);
   const uniqueOffsets = Array.from(new Set(sequence)).sort((a, b) => a - b);
   return uniqueOffsets
     .map((offset) => noteNames.value[rootIndex + offset])
@@ -115,12 +120,12 @@ const defaultScalesPerTet = {
   31: "Ionian [7]",
 };
 
-watch(divisionsPerOctave, (perOctave: SupportedEDOs) => {
+watch([divisionsPerOctave, lowestNote], ([perOctave, currentLowestNote]) => {
   selectedScaleName.value = defaultScalesPerTet[perOctave];
   // Pattern scales hold notes tied to the previous temperament, so drop them.
   customScales.value = {};
   patternError.value = "";
-  scales.value = scalesFor(lowestNote.replace(/\d/, "") as PitchClass);
+  scales.value = scalesFor(currentLowestNote.replace(/\d/, "") as PitchClass);
 });
 
 const notesPerString = ref<number | null>(3);
@@ -141,19 +146,19 @@ export function useGuitar() {
     );
 
   const scaleForGuitar = (startingNoteNameIndex: number, endingNoteNameIndex: number) => {
-    return selectedScale.value.notes
+    return ((selectedScale.value.notes) as Note[])
       .filter(
         (note) =>
-          startingNoteNameIndex + noteNames.value.indexOf(lowestNote) <=
+          startingNoteNameIndex + noteNames.value.indexOf(lowestNote.value) <=
             note.absolutePitchNumber &&
           note.absolutePitchNumber <=
-            endingNoteNameIndex + noteNames.value.indexOf(lowestNote)
+            endingNoteNameIndex + noteNames.value.indexOf(lowestNote.value)
       )
       .map((note) => ({
         note,
         fretNumber:
           note.absolutePitchNumber -
-          noteNames.value.indexOf(lowestNote) -
+          noteNames.value.indexOf(lowestNote.value) -
           startingNoteNameIndex,
       }));
   };
@@ -194,7 +199,7 @@ export function useGuitar() {
       return;
     }
     try {
-      const rootNoteName = lowestNote.replace(/\d/, "") as PitchClass;
+      const rootNoteName = lowestNote.value.replace(/\d/, "") as PitchClass;
       const built = scaleFromPattern(name, rootNoteName) as Record<string, any>;
       // Repeat the walk beyond the octave across the whole fretboard, then use
       // that same sequence for both rendering and playback so the board shows
@@ -214,7 +219,7 @@ export function useGuitar() {
     const guitar = initializedGuitarNotes();
     for (const stringNumber in guitar) {
       const startingNoteOnString = tuningByStringNumber.value[stringNumber as StringNumber];
-      const offset = distanceBetweenNotes(lowestNote, startingNoteOnString);
+      const offset = distanceBetweenNotes(lowestNote.value, startingNoteOnString);
       const previousStringNumber = stringNumber.replace(/\d/, (n) => `${+n + 1}`) as StringNumber;
 
       const distanceBetweenStrings = guitar[previousStringNumber]
@@ -285,7 +290,7 @@ export function useGuitar() {
       }
     }
 
-    const rootIndex = noteNames.value.indexOf(lowestNote);
+    const rootIndex = noteNames.value.indexOf(lowestNote.value);
 
     return offsets
       .map((offset): PlaybackEvent | null => {

@@ -144,8 +144,6 @@ const reachableFrets = computed(() =>
   shouldShow12TETFrets.value ? range(0, 24) : range(startingFret, endingFret.value)
 );
 const fretDistances = computed(() =>
-// TODO: Fix this
-   //@ts-expect-error - Argument of type '12 | SupportedEDOs' is not assignable to parameter of type 'SupportedEDOs | undefined'.
   fretDistancesFromNut(shouldShow12TETFrets.value ? 12 : divisionsPerOctave.value)
 );
 const fretSpacingPx = computed(() => fretDistances.value.slice(1));

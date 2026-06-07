@@ -1,16 +1,16 @@
 import { computed } from "vue";
 import { useTemperament } from "../state/temperament";
-import { scalarIntervallicDistances12EDO } from "./12-tet-scalar-intervals"
+import { scalarIntervallicDistances12EDO } from "./12-tet-scalar-intervals";
 import { scalarIntervallicDistances16EDO } from "./16-tet-scalar-intervals";
 import { scalarIntervallicDistances17EDO } from "./17-tet-scalar-intervals";
 import { scalarIntervallicDistances24EDO } from "./24-tet-scalar-intervals";
 import { scalarIntervallicDistances31EDO } from "./31-tet-scalar-intervals";
-import { sum } from "../helpers";
-import { PitchClass } from "./types";
+import type { PitchClass, PatternScaleDefinition } from "./types";
 import { parsePattern, stepDeltasToScale } from "./interval-pattern";
+import { buildScalesForTemperament, generateScale, pitchClassNumbersFromIntervals } from "./scale-builder";
 
-const { chosenTemperamentName, notes, noteNames, pitchClassNames } =
-  useTemperament();
+// ── Pure interval data (no Vue) ──────────────────────────────────────
+
 const intervallicDistancesForTemperaments: Record<string, Record<string, number[]>> = {
   "12 TET": scalarIntervallicDistances12EDO,
   "16 TET": scalarIntervallicDistances16EDO,
@@ -18,58 +18,49 @@ const intervallicDistancesForTemperaments: Record<string, Record<string, number[
   "24 TET": scalarIntervallicDistances24EDO,
   "31 TET": scalarIntervallicDistances31EDO,
 };
+
+/** Get the interval map for a given temperament name (pure). */
+export function getIntervallicDistancesForTemperament(temperamentName: string): Record<string, number[]> {
+  return intervallicDistancesForTemperaments[temperamentName] ?? {};
+}
+
+// ── Vue composable (thin glue layer) ─────────────────────────────────
+
+const { chosenTemperamentName, notes, pitchClassNames } = useTemperament();
+
 const intervallicDistancesForChosenTemperament = computed(
-  () => intervallicDistancesForTemperaments[chosenTemperamentName.value]
+  () => getIntervallicDistancesForTemperament(chosenTemperamentName.value)
 );
-const scaleNames = computed(() =>
+
+export const scaleNames = computed(() =>
   Object.keys(intervallicDistancesForChosenTemperament.value)
 );
 
-const scalesFor = (rootNoteName: PitchClass) => {
-  console.log(
-    chosenTemperamentName.value,
-    intervallicDistancesForChosenTemperament.value
-  );
-  return Object.fromEntries(
-    Object.entries(intervallicDistancesForChosenTemperament.value).map(
-      ([scaleName, intervals]) => [
-        scaleName,
-        {
-          notes: Array.from(scale(intervals, rootNoteName)),
-          period: sum(intervals),
-          intervals,
-          degrees: intervals.length,
-          rootNoteName,
-          pitchClassNumbers: pitchClassNumbersFromIntervallicDistances(
-            intervals,
-            rootNoteName
-          ),
-        },
-      ]
-    )
+/** Build built-in scales for the active temperament at a given root. */
+const scalesFor = (rootNoteName: PitchClass): Record<string, any> => {
+  return buildScalesForTemperament(
+    intervallicDistancesForChosenTemperament.value,
+    rootNoteName,
+    pitchClassNames.value,
+    notes.value
   );
 };
 
-// Build a scale from an interval pattern string (e.g. "+m3 +m3 +M2"), producing
-// the same shape as an entry from `scalesFor` so it can be dropped into the
-// existing scale set and rendered on the fretboard unchanged.
-const scaleFromPattern = (input: string, rootNoteName: PitchClass) => {
+/** Build a scale from an interval pattern string (e.g. "+m3 +m3 +M2"). */
+const scaleFromPattern = (input: string, rootNoteName: PitchClass): PatternScaleDefinition => {
   const edo = pitchClassNames.value.length;
   const deltas = parsePattern(input, edo);
   const { intervals, period } = stepDeltasToScale(deltas, edo);
+
   return {
-    notes: Array.from(scale(intervals, rootNoteName)),
+    notes: Array.from(generateScale(intervals, rootNoteName, pitchClassNames.value, notes.value)),
     period,
     intervals,
     degrees: intervals.length,
     rootNoteName,
-    // The parsed step deltas, so the fretboard layer can extend the walk across
-    // the neck (repeating beyond an octave) and use it for rendering + playback.
     deltas,
-    pitchClassNumbers: pitchClassNumbersFromIntervallicDistances(
-      intervals,
-      rootNoteName
-    ),
+    walk: [], // will be populated by patternWalk in guitar.ts addPatternScale
+    pitchClassNumbers: pitchClassNumbersFromIntervals(intervals, rootNoteName, pitchClassNames.value),
   };
 };
 
@@ -79,28 +70,4 @@ export function useScales() {
     scalesFor,
     scaleFromPattern,
   };
-}
-
-// TODO: This may leave out notes below the rootNote on the list of absolute pitches
-function* scale(intervals: number[], rootNoteName: PitchClass) {
-  const startingNoteNameIndex = pitchClassNames.value.indexOf(rootNoteName);
-  const endingNoteNameIndex = notes.value.length - 1;
-  let pitchCount = 0;
-  let noteNameIndex = startingNoteNameIndex;
-  while (pitchCount + startingNoteNameIndex <= endingNoteNameIndex) {
-    if (!noteNames.value[noteNameIndex]) break;
-    yield notes.value[noteNameIndex];
-    noteNameIndex += intervals[pitchCount % intervals.length];
-    ++pitchCount;
-  }
-}
-
-function pitchClassNumbersFromIntervallicDistances(intervals: number[], rootNoteName: PitchClass) {
-  return intervals.reduce(
-    (builtScale, intervallicDistance) => {
-      builtScale.push(intervallicDistance + (builtScale.at(-1) as number));
-      return builtScale;
-    },
-    [rootNoteName ? pitchClassNames.value.indexOf(rootNoteName) : 0]
-  );
 }

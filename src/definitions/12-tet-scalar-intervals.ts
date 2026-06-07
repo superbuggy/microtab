@@ -53,9 +53,7 @@ export const scalarIntervallicDistances12EDO = {
   "In-Sen [5]": [1, 3, 2, 1, 5],
   "Akebono [5]": [2, 3, 2, 3, 2],
   "Egyptian [5]": [2, 3, 2, 3, 2],
-  "Hirajoshi [5]": [2, 1, 4, 1, 4],
   "Kumoi [5]": [2, 1, 4, 2, 3],
   "Byzantine [7]": [1, 3, 1, 2, 1, 3, 1],
   "Arabic [7]": [1, 3, 1, 2, 1, 3, 1],
-  "Persian [7]": [1, 3, 1, 2, 1, 3, 1],
 };

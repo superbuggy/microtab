@@ -23,7 +23,6 @@ export class TET extends Temperament {
   }
 
   get stepSize() {
-    console.log(this)
     return null;
   }
 

@@ -78,12 +78,6 @@ const notesInTemperament = computed(() => notesFor(divisionsPerOctave.value));
 const notesInTemperamentByPitch = computed(() => notesDictionaryFor(divisionsPerOctave.value));
 
 
-// For debugging purposes
-// @ts-expect-error - no property on window
-window.chosenTemperament = chosenTemperament.value;
-// @ts-expect-error - no property on window
-window.Note = Note.value;
-
 const divisionsPerOctave = computed(
   () =>
     ({
