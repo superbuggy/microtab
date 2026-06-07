@@ -331,39 +331,34 @@ const textOffsetY = fontSize;
       </g>
       <g class="fretted-notes-group">
         <g
-          v-for="fret in reachableFrets"
-          :key="fret"
+          v-for="(string, index) of Object.keys(stringNotes)"
+          :key="string"
         >
-          <g
-            v-for="(string, index) of Object.keys(stringNotes)"
-            :key="string"
+          <circle
+            v-for="{ note, fretNumber, noteY, string: stringN } in stringNotes[string]"
+            :id="`note-${stringN}-${note.frequency}-hz`"
+            :key="`${string}-${fretNumber}`"
+            class="fretted-note active"
+            :cx="index * stringSpacing + xBoardStart"
+            :cy="noteY"
+            :r="Math.min(stringSpacing / 5)"
+            :fill="hslForNote(note)"
+            stroke-width="4"
+            @mouseover="handleHover($event, note)"
+            @mouseout="resetPopUp"
+            @click="playNote(note.frequency)"
           >
-            <circle
-              v-for="{ note, fretNumber, noteY, string: stringN } in stringNotes[string]"
-              :id="`note-${note.frequency}-hz`"
-              :key="`${string}-${fretNumber}`"
-              class="fretted-note active"
-              :cx="index * stringSpacing + xBoardStart"
-              :cy="noteY"
-              :r="Math.min(stringSpacing / 5)"
-              :fill="hslForNote(note)"
-              stroke-width="4"
-              @mouseover="handleHover($event, note)"
-              @mouseout="resetPopUp"
-              @click="playNote(note.frequency)"
-            >
-              <title>{{ fretNumber }} {{ note }} {{ stringN }}</title>
-            </circle>
-            <circle
-              v-if="detectedPitchStringsCoords"
-              :cx="index * stringSpacing + xBoardStart"
-              :cy="detectedPitchStringsCoords[string]"
-              :r="Math.min(stringSpacing / 10)"
-              fill="transparent"
-              stroke="#F00"
-              stroke-width="4" 
-            />
-          </g>
+            <title>{{ fretNumber }} {{ note }} {{ stringN }}</title>
+          </circle>
+          <circle
+            v-if="detectedPitchStringsCoords"
+            :cx="index * stringSpacing + xBoardStart"
+            :cy="detectedPitchStringsCoords[string]"
+            :r="Math.min(stringSpacing / 10)"
+            fill="transparent"
+            stroke="#F00"
+            stroke-width="4" 
+          />
         </g>
       </g>
       <PopOver

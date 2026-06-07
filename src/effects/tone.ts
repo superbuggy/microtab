@@ -13,7 +13,7 @@ export function useTone() {
     tempo.value = Number(target?.value);
     Tone.getTransport().bpm.value = Number(tempo.value);
   }
-  function playNoteSequence(notesFrequenciesToPlay: {time: number, note: number[] | string }[], onEnd: () => void) {
+  function playNoteSequence(notesFrequenciesToPlay: {time: number, note: number[] | string, id?: string }[], onEnd: () => void) {
     stopPlayback();
     Tone.Transport.start();
     const synth = new Tone.PolySynth().toDestination();
@@ -26,7 +26,8 @@ export function useTone() {
     const part = new Tone.Part(
       (time, event) => {
         if (event && event.note !== "END") {
-          const noteDotEl = document.getElementById(`note-${event.note}-hz`);
+          const elementId = event.id ?? `note-${event.note}-hz`;
+          const noteDotEl = document.getElementById(elementId);
           noteDotEl?.classList.add("is-playing");
           setTimeout(
             () => noteDotEl?.classList.remove("is-playing"),

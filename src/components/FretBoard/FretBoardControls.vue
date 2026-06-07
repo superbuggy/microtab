@@ -28,22 +28,20 @@ const isPlayingSequence = ref(false);
 
 function playScale() {
   isPlayingSequence.value = true;
-  const ascendingScale = Object.values(scaleNotesOnStrings.value)
-    .flat()
-    .map(({ note }, index) => ({
-      time: index / bps.value,
-      note: [note.frequency],
-    }));
-  const notesToPlay = [
-    ...ascendingScale,
-    ...ascendingScale
-      .slice()
-      .reverse()
-      .map(({ note }, index) => ({
-        time: (ascendingScale.length + index) / bps.value,
-        note,
-      })),
-  ];
+  // Keep each note tied to the string it lives on so playback can highlight the
+  // correct fretted-note element (a given pitch can appear on several strings).
+  const ascending = Object.entries(scaleNotesOnStrings.value).flatMap(
+    ([string, notes]) =>
+      notes.map(({ note }: { note: { frequency: number } }) => ({
+        note: [note.frequency],
+        id: `note-${string}-${note.frequency}-hz`,
+      }))
+  );
+  const sequence = [...ascending, ...ascending.slice().reverse()];
+  const notesToPlay = sequence.map((event, index) => ({
+    ...event,
+    time: index / bps.value,
+  }));
   const onEnd = () => (isPlayingSequence.value = false);
 
   playNoteSequence(notesToPlay, onEnd);
