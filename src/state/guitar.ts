@@ -6,7 +6,7 @@ import { useTuning } from "./tuning";
 import { SupportedEDOs, PitchClass } from "@/definitions/types";
 const { TUNING } = useTuning();
 
-const { scaleNames, scalesFor } = useScales();
+const { scaleNames, scalesFor, scaleFromPattern } = useScales();
 const {
   distanceBetweenNotes,
   noteNames,
@@ -65,7 +65,19 @@ const lowestNote: PitchName = tuningByStringNumber.value[`string${stringNumbers[
 const scales = ref(scalesFor(lowestNote.replace(/\d/, "") as PitchClass));
 const selectedScaleName = ref("Ionian");
 
+// Scales generated from an interval pattern at runtime. Kept separate from the
+// built-in scale set so they can be merged into the picker and cleared when the
+// temperament changes (their notes are tied to the temperament active at build
+// time).
+const customScales = ref<Record<string, any>>({});
+const patternError = ref("");
+
 const selectedScale = computed(() => scales.value[selectedScaleName.value]);
+
+const allScaleNames = computed(() => [
+  ...scaleNames.value,
+  ...Object.keys(customScales.value),
+]);
 
 const defaultScalesPerTet = {
   12: "Ionian [7]",
@@ -77,6 +89,9 @@ const defaultScalesPerTet = {
 
 watch(divisionsPerOctave, (perOctave: SupportedEDOs) => {
   selectedScaleName.value = defaultScalesPerTet[perOctave];
+  // Pattern scales hold notes tied to the previous temperament, so drop them.
+  customScales.value = {};
+  patternError.value = "";
   scales.value = scalesFor(lowestNote.replace(/\d/, "") as PitchClass);
 });
 
@@ -141,6 +156,26 @@ export function useGuitar() {
     selectedScaleName.value = scaleName;
   };
 
+  // Parse an interval pattern into a scale, add it to the pickable scale set,
+  // and select it. Parse failures are surfaced via `patternError`.
+  const addPatternScale = (input: string) => {
+    patternError.value = "";
+    const name = input.trim();
+    if (!name) {
+      patternError.value = "Pattern is empty.";
+      return;
+    }
+    try {
+      const rootNoteName = lowestNote.replace(/\d/, "") as PitchClass;
+      const built = scaleFromPattern(name, rootNoteName);
+      customScales.value = { ...customScales.value, [name]: built };
+      scales.value = { ...scales.value, [name]: built };
+      selectScale(name);
+    } catch (error) {
+      patternError.value = (error as Error).message;
+    }
+  };
+
   const fretboardScale = computed(() => {
     const guitar = initializedGuitarNotes();
     for (const stringNumber in guitar) {
@@ -197,8 +232,10 @@ export function useGuitar() {
     tuningByStringNumber12Tet,
     stringNumbers,
     scaleNotesOnStrings,
-    scaleNames,
+    scaleNames: allScaleNames,
     selectScale,
+    addPatternScale,
+    patternError,
     selectedScaleName,
     selectedScale,
     notesPerString,

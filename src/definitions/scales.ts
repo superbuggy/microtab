@@ -7,6 +7,7 @@ import { scalarIntervallicDistances24EDO } from "./24-tet-scalar-intervals";
 import { scalarIntervallicDistances31EDO } from "./31-tet-scalar-intervals";
 import { sum } from "../helpers";
 import { PitchClass } from "./types";
+import { parsePattern, stepDeltasToScale } from "./interval-pattern";
 
 const { chosenTemperamentName, notes, noteNames, pitchClassNames } =
   useTemperament();
@@ -49,10 +50,31 @@ const scalesFor = (rootNoteName: PitchClass) => {
   );
 };
 
+// Build a scale from an interval pattern string (e.g. "+m3 +m3 +M2"), producing
+// the same shape as an entry from `scalesFor` so it can be dropped into the
+// existing scale set and rendered on the fretboard unchanged.
+const scaleFromPattern = (input: string, rootNoteName: PitchClass) => {
+  const edo = pitchClassNames.value.length;
+  const deltas = parsePattern(input, edo);
+  const { intervals, period } = stepDeltasToScale(deltas, edo);
+  return {
+    notes: Array.from(scale(intervals, rootNoteName)),
+    period,
+    intervals,
+    degrees: intervals.length,
+    rootNoteName,
+    pitchClassNumbers: pitchClassNumbersFromIntervallicDistances(
+      intervals,
+      rootNoteName
+    ),
+  };
+};
+
 export function useScales() {
   return {
     scaleNames,
     scalesFor,
+    scaleFromPattern,
   };
 }
 

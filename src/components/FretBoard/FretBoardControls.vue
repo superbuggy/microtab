@@ -23,8 +23,16 @@ const {
   selectNotesPerString,
   startingFromFret,
   scaleNotesOnStrings,
+  addPatternScale,
+  patternError,
 } = useGuitar();
 const isPlayingSequence = ref(false);
+const patternInput = ref("");
+
+function submitPattern() {
+  addPatternScale(patternInput.value);
+  if (!patternError.value) patternInput.value = "";
+}
 
 function playScale() {
   isPlayingSequence.value = true;
@@ -97,6 +105,24 @@ function stopPlayingScale() {
       type="number"
       name=""
     >
+  </section>
+  <section>
+    <input
+      v-model="patternInput"
+      type="text"
+      placeholder="Interval pattern, e.g. +m3 +m3 +M2"
+      aria-label="Interval pattern"
+      @keyup.enter="submitPattern"
+    >
+    <button @click="submitPattern">
+      Generate
+    </button>
+    <span
+      v-if="patternError"
+      role="alert"
+    >
+      {{ patternError }}
+    </span>
   </section>
   <section>
     <button
