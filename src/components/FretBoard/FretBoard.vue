@@ -2,16 +2,16 @@
 import FretBoardControls from "./FretBoardControls.vue";
 import PopOver from "@/components/PopOver.vue";
 
-import { computed, ref } from "vue";
-import { remPixels, isOdd, range, mapValueToRange, objectMap } from "@/helpers";
+import { isOdd } from "@/helpers";
 
 import { useGuitar } from "@/state/guitar";
 import { useTemperament } from "@/state/temperament";
 import { usePitchDetection } from "@/state/usePitchDetection";
 import { useFretBoardControls } from "@/state/fretboard-controls";
-import { useTone } from "@/effects/tone";
 
-const { playNote } = useTone();
+import { useFretboardGeometry } from "@/composables/useFretboardGeometry";
+import { useFretboardNotes } from "@/composables/useFretboardNotes";
+
 const { inputPitch } = usePitchDetection();
 
 const {
@@ -31,151 +31,57 @@ const {
   tuningByStringNumber12Tet,
 } = useGuitar();
 
-const noteNames = computed(() =>
-  selectedScale.value.pitchClassNumbers.map(
-    (pitchNumber) =>
-      pitchClassNames.value[
-        (pitchNumber + startingFromFret.value) % selectedScale.value.period
-      ]
-  )
+// Extract geometry logic - destructure for auto-unwrapping in template
+const {
+  VIEWBOX_X_MAX,
+  VIEWBOX_Y_MAX,
+  xBoardStart,
+  yBoardStart,
+  width,
+  fretboardLengthPx,
+  endingFret,
+  reachableFrets,
+  fretDistances,
+  fretSpacingPx,
+  fretHeightsPx,
+  dottedFrets,
+  stringSpacing,
+  fontSize,
+  textOffsetX,
+  textOffsetY,
+  startingFret,
+} = useFretboardGeometry(
+  divisionsPerOctave,
+  stringQuantity,
+  shouldShow12TETFrets,
+  tuningByStringNumber,
+  notesInTemperamentByPitch,
+  notesFor
 );
 
-const VIEWBOX_X_MAX = 600;
-const VIEWBOX_Y_MAX = 4000;
-// const REACHABLE_FRETS_PERCENTAGE = 24 / 12;
-const xBoardStart = VIEWBOX_X_MAX / 4;
-const yBoardStart = VIEWBOX_Y_MAX / 8;
-const width = VIEWBOX_X_MAX / 2;
-const fretboardLengthPx = VIEWBOX_Y_MAX / 2;
-
-const popUpX = ref<number|null>(null);
-const popUpY = ref<number|null>(null);
-const popUpNote = ref<{pitch: string, } | null>(null);
-
-const SCALE_LENGTH = 25.5;
-
-function stringEnergy (stringRootFrequency: number) {
-  // Mersenne's Law
-  // L = 1/2 * sqrt(T/m) * 1/f
-  // T/m = (2Lf)^2
-
-  return 2 * SCALE_LENGTH * stringRootFrequency;
-} 
-// Frequency = 1 / 2L * stringEnergy //sqrt(T/m)
-// From a note frequency for a string, find the position on the string for that note frequency
-function distanceForFrequency (stringRootFrequency: number, noteFrequency: number) {
-  // Mersenne's Law
-  // L = 1/2 * sqrt(T/m) * 1/f
-  // T/m = (2Lf)^2
-
-  return stringEnergy(stringRootFrequency) / (noteFrequency * 2);
-}
-
-function noteYCoord (stringRootFrequency: number, noteFrequency: number) {
-  return 1.775 * // not sure why this number is magic 71/40
-  (fretboardLengthPx -
-    mapValueToRange(
-      distanceForFrequency(stringRootFrequency, noteFrequency),
-      0,
-      SCALE_LENGTH,
-      yBoardStart,
-      fretboardLengthPx
-    )
-  ) + yBoardStart;
-}
-
-const detectedPitchStringsCoords = computed((): Record<string, number> | null => {
-  if (inputPitch.value === null) return null;
-  return objectMap(rootFrequenciesByStringNumber.value, (_, rootFrequency) => {
-    return noteYCoord(rootFrequency, inputPitch.value as number);
-  });
-});
-
-const rootFrequenciesByStringNumber = computed((): Record<string, number> => {
-  return objectMap(
-    tuningByStringNumber.value,
-    (_, pitchName) => notesInTemperamentByPitch.value[pitchName].frequency
-  );
-});
-
-const stringNotes = computed((): Record<string, Record<string, any>> => {
-  const reference = shouldShow12TETFrets.value ? notesDictionaryFor12Tet : notesInTemperamentByPitch.value
-  // The 12-TET guides reference the 12-TET dictionary, so look up string roots
-  // with the canonical 12-TET spelling (the active-temperament resolution may
-  // use a spelling 12-TET doesn't define, e.g. 17-TET's Eb in place of D#).
-  const tuning = shouldShow12TETFrets.value ? tuningByStringNumber12Tet.value : tuningByStringNumber.value
-  const stringRootFrequencies = objectMap(
-    tuning,
-    (_, pitchName) => reference[pitchName].frequency
-  );
-
-  const notesWithDistances = objectMap(stringRootFrequencies, (string, rootFrequency) =>
-    scaleNotesOnStrings.value[string].map(({ note, fretNumber }: { note: any, fretNumber: number}) => ({
-      note,
-      fretNumber,
-      string, 
-      noteY: noteYCoord(rootFrequency, note.frequency),
-    }))
-  );
-
-  return notesWithDistances;
-});
-
-  const  lowestStringRootFrequency = computed(() => notesInTemperamentByPitch.value[tuningByStringNumber.value.string6]
-    .frequency);
-
-// Assumes an equal step temperament
-function fretDistancesFromNut (divisions = divisionsPerOctave.value) {
-  // TODO: Add True Temperament Mode
-  const lowestStringRootIndex = notesFor(divisions).findIndex(
-    (note) => note.pitch === tuningByStringNumber.value.string6
-  );
-
-  const twoOctaves = notesFor(divisions)
-    .slice(lowestStringRootIndex, lowestStringRootIndex + 2 * divisions)
-    .map((note) => noteYCoord(lowestStringRootFrequency.value, note.frequency));
-
-  return twoOctaves;
-};
-
-const startingFret = 0;
-const endingFret = computed(() => 2 * divisionsPerOctave.value);
-const reachableFrets = computed(() =>
-  shouldShow12TETFrets.value ? range(0, 24) : range(startingFret, endingFret.value)
-);
-const fretDistances = computed(() =>
-  fretDistancesFromNut(shouldShow12TETFrets.value ? 12 : divisionsPerOctave.value)
-);
-const fretSpacingPx = computed(() => fretDistances.value.slice(1));
-const fretHeightsPx = computed(() =>
-  fretSpacingPx.value.reduce((distances: number[], length: number, index: number) => {
-    distances.push(length - fretDistances.value[index]);
-    return distances;
-  }, [])
-);
-
-function handleHover (event: Event, note: {pitch: string}) {
-  const target = event.target as SVGElement;
-  popUpX.value = Number(target.getAttribute('cx'));
-  popUpY.value = Number(target.getAttribute('cy'));
-  popUpNote.value = note;
-}
-
-function resetPopUp () {
-  popUpNote.value = null;
-  popUpX.value = NaN;
-  popUpY.value = NaN;
-}
-
-const dottedFrets = computed(() => shouldShow12TETFrets.value
-  ? [3, 5, 7, 9, 12, 15, 17, 19, 21, 24]
-  : {
-      12: [3, 5, 7, 9, 12, 15, 17, 19, 21, 24],
-      16: [3, 5, 7, 9, 11, 13, 16, 19, 21, 23, 25, 27, 29, 32],
-      17: [4, 7, 10, 13, 17, 21, 24, 27, 30, 34],
-      24: [6, 10, 14, 18, 24, 30, 34, 38, 42, 48],
-      31: [8, 13, 18, 23, 31, 39, 44, 49, 54, 62],
-    }[divisionsPerOctave.value]
+// Extract notes and interaction logic - destructure for auto-unwrapping in template
+const {
+  noteNames,
+  stringNotes,
+  detectedPitchStringsCoords,
+  popUpX,
+  popUpY,
+  popUpNote,
+  handleHover,
+  resetPopUp,
+  playNote,
+} = useFretboardNotes(
+  tuningByStringNumber,
+  tuningByStringNumber12Tet,
+  scaleNotesOnStrings,
+  notesInTemperamentByPitch,
+  notesDictionaryFor12Tet,
+  shouldShow12TETFrets,
+  selectedScale,
+  pitchClassNames,
+  startingFromFret,
+  inputPitch,
+  null // stringNotes will be computed from the composable
 );
 
 function hue (degree: number, upperBound: number) {
@@ -188,16 +94,11 @@ function hsl (degree: number, upperBound: number, l = 75) {
 
 function hslForNote (note: { pitchClassNumber: number }, l = 50) {
   const degree = selectedScale.value.pitchClassNumbers
-    .map((pitchClassNumber) => pitchClassNumber % selectedScale.value.period)
+    .map((pitchClassNumber: number) => pitchClassNumber % selectedScale.value.period)
     .indexOf(note.pitchClassNumber);
 
   return hsl(degree, selectedScale.value.degrees, l);
 };
-
-const stringSpacing = width / (stringQuantity.value - 1);
-const fontSize = remPixels() * 2.5;
-const textOffsetX = 0.5 * fontSize;
-const textOffsetY = fontSize;
 </script>
 
 <template>
@@ -211,9 +112,9 @@ const textOffsetY = fontSize;
       v-for="(noteName, index) in noteNames.slice(0, noteNames.length - 1)"
       :key="index"
       class="note-badge"
-      :style="`color: ${hsl(index, noteNames.length - 1)}; background-color:${hsl(
-        index,
-        noteNames.length,
+      :style="`color: ${hsl(index as number, (noteNames.length as number) - 1)}; background-color:${hsl(
+        index as number,
+        noteNames.length as number,
         12
       )};`"
     >
@@ -305,7 +206,7 @@ const textOffsetY = fontSize;
         >
           <circle
             :cx="
-              fretDot % (shouldShow12TETFrets ? 12 : divisionsPerOctave) === 0
+              fretDot % (shouldShow12TETFrets ? 12 : (divisionsPerOctave as number)) === 0
                 ? width * 0.8
                 : width
             "
@@ -320,7 +221,7 @@ const textOffsetY = fontSize;
             <title>{{ fretHeightsPx[fretDot] * 0.666 }}, {{ stringSpacing / 3 }}</title>
           </circle>
           <circle
-            v-if="fretDot % (shouldShow12TETFrets ? 12 : divisionsPerOctave) === 0"
+            v-if="fretDot % (shouldShow12TETFrets ? 12 : (divisionsPerOctave as number)) === 0"
             :cx="width * 1.2"
             :cy="
               divisionsPerOctave !== 24
@@ -338,7 +239,7 @@ const textOffsetY = fontSize;
           :key="string"
         >
           <circle
-            v-for="{ note, fretNumber, noteY, string: stringN } in stringNotes[string]"
+            v-for="{ note, fretNumber, noteY, string: stringN } in (stringNotes as any)[string]"
             :id="`note-${stringN}-${note.frequency}-hz`"
             :key="`${string}-${fretNumber}`"
             class="fretted-note active"
