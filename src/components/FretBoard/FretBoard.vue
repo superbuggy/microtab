@@ -28,6 +28,7 @@ const {
   selectedScale,
   startingFromFret,
   tuningByStringNumber,
+  tuningByStringNumber12Tet,
 } = useGuitar();
 
 const noteNames = computed(() =>
@@ -99,8 +100,12 @@ const rootFrequenciesByStringNumber = computed((): Record<string, number> => {
 
 const stringNotes = computed((): Record<string, Record<string, any>> => {
   const reference = shouldShow12TETFrets.value ? notesDictionaryFor12Tet : notesInTemperamentByPitch.value
+  // The 12-TET guides reference the 12-TET dictionary, so look up string roots
+  // with the canonical 12-TET spelling (the active-temperament resolution may
+  // use a spelling 12-TET doesn't define, e.g. 17-TET's Eb in place of D#).
+  const tuning = shouldShow12TETFrets.value ? tuningByStringNumber12Tet.value : tuningByStringNumber.value
   const stringRootFrequencies = objectMap(
-    tuningByStringNumber.value,
+    tuning,
     (_, pitchName) => reference[pitchName].frequency
   );
 

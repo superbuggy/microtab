@@ -7,8 +7,14 @@ import { SupportedEDOs, PitchClass } from "@/definitions/types";
 const { TUNING } = useTuning();
 
 const { scaleNames, scalesFor } = useScales();
-const { distanceBetweenNotes, noteNames, divisionsPerOctave } =
-  useTemperament();
+const {
+  distanceBetweenNotes,
+  noteNames,
+  divisionsPerOctave,
+  notesInTemperament,
+  notesInTemperamentByPitch,
+  notesDictionaryFor12Tet,
+} = useTemperament();
 
 const DEFAULT_STRING_QUANTITY = 6;
 // const TUNING = ["B1", "E2", "A2", "D3", "F#3", "B3"];
@@ -17,7 +23,36 @@ const stringQuantity = ref(DEFAULT_STRING_QUANTITY);
 const stringNumbers = Array.from({ length: stringQuantity.value }).map(
   (_, index, { length }) => length - index
 );
-const tuningByStringNumber = ref<GuitarTuning>(
+// The tuning is spelled in 12-TET note names, but not every temperament
+// defines the same enharmonic spellings (e.g. 17-TET has no D#, only Eb).
+// Resolve each tuning pitch to whatever the active temperament calls the
+// nearest pitch so any tuning works in any temperament.
+const nearestPitchInTemperament = (targetFrequency: number): PitchName =>
+  notesInTemperament.value.reduce((nearest, note) =>
+    Math.abs(note.frequency - targetFrequency) <
+    Math.abs(nearest.frequency - targetFrequency)
+      ? note
+      : nearest
+  ).pitch;
+
+const resolveTuningPitch = (pitchName: PitchName): PitchName => {
+  if (notesInTemperamentByPitch.value[pitchName]) return pitchName;
+  const target = notesDictionaryFor12Tet[pitchName]?.frequency;
+  return target == null ? pitchName : nearestPitchInTemperament(target);
+};
+
+const tuningByStringNumber = computed<GuitarTuning>(() =>
+  Object.fromEntries(
+    stringNumbers.map((stringNumber, index) => [
+      `string${stringNumber}`,
+      resolveTuningPitch(TUNING.value[index]),
+    ])
+  )
+);
+// The raw, 12-TET-spelled tuning keyed by string. Used by the "12-TET guides"
+// overlay, which references the 12-TET note dictionary and therefore needs the
+// canonical 12-TET spelling rather than the active temperament's resolution.
+const tuningByStringNumber12Tet = computed<GuitarTuning>(() =>
   Object.fromEntries(
     stringNumbers.map((stringNumber, index) => [
       `string${stringNumber}`,
@@ -159,6 +194,7 @@ export function useGuitar() {
     stringQuantity,
     divisionsPerOctave,
     tuningByStringNumber,
+    tuningByStringNumber12Tet,
     stringNumbers,
     scaleNotesOnStrings,
     scaleNames,
