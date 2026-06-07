@@ -63,6 +63,9 @@ const scaleFromPattern = (input: string, rootNoteName: PitchClass) => {
     intervals,
     degrees: intervals.length,
     rootNoteName,
+    // The parsed step deltas, so the fretboard layer can extend the walk across
+    // the neck (repeating beyond an octave) and use it for rendering + playback.
+    deltas,
     pitchClassNumbers: pitchClassNumbersFromIntervallicDistances(
       intervals,
       rootNoteName

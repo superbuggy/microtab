@@ -25,6 +25,7 @@ const {
   scaleNotesOnStrings,
   addPatternScale,
   patternError,
+  generatedPlaybackSequence,
 } = useGuitar();
 const isPlayingSequence = ref(false);
 const patternInput = ref("");
@@ -36,15 +37,18 @@ function submitPattern() {
 
 function playScale() {
   isPlayingSequence.value = true;
-  // Keep each note tied to the string it lives on so playback can highlight the
-  // correct fretted-note element (a given pitch can appear on several strings).
-  const ascending = Object.entries(scaleNotesOnStrings.value).flatMap(
-    ([string, notes]) =>
+  // A generated pattern carries its own walk order; play that when present so
+  // playback reflects the pattern. Otherwise keep each note tied to the string
+  // it lives on so playback can highlight the correct fretted-note element (a
+  // given pitch can appear on several strings).
+  const ascending =
+    generatedPlaybackSequence.value ??
+    Object.entries(scaleNotesOnStrings.value).flatMap(([string, notes]) =>
       notes.map(({ note }: { note: { frequency: number } }) => ({
         note: [note.frequency],
         id: `note-${string}-${note.frequency}-hz`,
       }))
-  );
+    );
   const sequence = [...ascending, ...ascending.slice().reverse()];
   const notesToPlay = sequence.map((event, index) => ({
     ...event,

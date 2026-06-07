@@ -1,6 +1,7 @@
 import type { GuitarTuning, PitchName, StringNumber, Note, Dict } from '@/definitions/types';
 import { watch, ref, computed } from "vue";
 import { useScales } from "@/definitions/scales";
+import { patternWalk } from "@/definitions/interval-pattern";
 import { useTemperament } from "./temperament";
 import { useTuning } from "./tuning";
 import { SupportedEDOs, PitchClass } from "@/definitions/types";
@@ -14,6 +15,7 @@ const {
   notesInTemperament,
   notesInTemperamentByPitch,
   notesDictionaryFor12Tet,
+  Note: NoteClass,
 } = useTemperament();
 
 const DEFAULT_STRING_QUANTITY = 6;
@@ -73,6 +75,32 @@ const customScales = ref<Record<string, any>>({});
 const patternError = ref("");
 
 const selectedScale = computed(() => scales.value[selectedScaleName.value]);
+
+// The number of steps spanned by the fretboard, from the lowest string's root
+// up to the highest reachable note (highest string root plus the rendered fret
+// span). A generated pattern's walk is extended to cover this so it repeats
+// across the whole neck rather than stopping at the first octave.
+const fretboardSpanSteps = (): number => {
+  const rootIndex = noteNames.value.indexOf(lowestNote);
+  const highestStringRoot =
+    tuningByStringNumber.value[`string${stringNumbers.at(-1)}` as StringNumber];
+  const highestIndex =
+    noteNames.value.indexOf(highestStringRoot) + frettableFretSpan.value;
+  return Math.max(highestIndex - rootIndex, divisionsPerOctave.value);
+};
+
+// Build the exact notes a generated pattern walks through, anchored at the
+// lowest string's root so they land in the fretboard's range. The fretboard
+// renders these directly, which means it only shows notes that are actually
+// played (no octave-tiled positions the walk never reaches).
+const patternNotesFromSequence = (sequence: number[]): Note[] => {
+  const rootIndex = noteNames.value.indexOf(lowestNote);
+  const uniqueOffsets = Array.from(new Set(sequence)).sort((a, b) => a - b);
+  return uniqueOffsets
+    .map((offset) => noteNames.value[rootIndex + offset])
+    .filter((pitchName): pitchName is PitchName => Boolean(pitchName))
+    .map((pitchName) => new NoteClass.value(pitchName));
+};
 
 const allScaleNames = computed(() => [
   ...scaleNames.value,
@@ -167,9 +195,15 @@ export function useGuitar() {
     }
     try {
       const rootNoteName = lowestNote.replace(/\d/, "") as PitchClass;
-      const built = scaleFromPattern(name, rootNoteName);
+      const built = scaleFromPattern(name, rootNoteName) as Record<string, any>;
+      // Repeat the walk beyond the octave across the whole fretboard, then use
+      // that same sequence for both rendering and playback so the board shows
+      // exactly the notes that get played (no unplayed octave-tiled positions).
+      const walk = patternWalk(built.deltas, fretboardSpanSteps());
+      built.sequence = walk;
+      built.notes = patternNotesFromSequence(walk);
       customScales.value = { ...customScales.value, [name]: built };
-      scales.value = { ...scales.value, [name]: built };
+      scales.value = { ...scales.value, [name]: built } as typeof scales.value;
       selectScale(name);
     } catch (error) {
       patternError.value = (error as Error).message;
@@ -223,6 +257,49 @@ export function useGuitar() {
 
   const scaleNotesOnStrings = computed((): Dict => fretboardScale.value);
 
+  // Turn a generated pattern's walk into an ordered, playable note sequence so
+  // playback follows the pattern instead of ascending pitch. Each entry carries
+  // a frequency to sound and, when a matching fretboard dot is rendered, the
+  // element id to highlight. Returns null for non-pattern scales, which keep
+  // the default ascending/descending playback.
+  type PlaybackEvent = { note: number[]; id?: string };
+  const generatedPlaybackSequence = computed<PlaybackEvent[] | null>(() => {
+    const current = selectedScale.value as
+      | { sequence?: number[] }
+      | undefined;
+    const offsets = current?.sequence;
+    if (!offsets) return null;
+
+    // Map each rendered note's absolute pitch to its dot id so the sequence can
+    // highlight a fretted note when one exists at that pitch.
+    const idByPitchNumber: Record<number, string> = {};
+    for (const [stringNumber, notes] of Object.entries(
+      scaleNotesOnStrings.value
+    )) {
+      for (const { note } of notes as { note: Note }[]) {
+        if (!(note.absolutePitchNumber in idByPitchNumber)) {
+          idByPitchNumber[
+            note.absolutePitchNumber
+          ] = `note-${stringNumber}-${note.frequency}-hz`;
+        }
+      }
+    }
+
+    const rootIndex = noteNames.value.indexOf(lowestNote);
+
+    return offsets
+      .map((offset): PlaybackEvent | null => {
+        const pitchIndex = rootIndex + offset;
+        const pitchName = noteNames.value[pitchIndex];
+        const frequency = pitchName
+          ? notesInTemperamentByPitch.value[pitchName]?.frequency
+          : undefined;
+        if (frequency == null) return null;
+        return { note: [frequency], id: idByPitchNumber[pitchIndex] };
+      })
+      .filter((event): event is PlaybackEvent => event !== null);
+  });
+
   selectScale(selectedScaleName.value);
 
   return {
@@ -236,6 +313,7 @@ export function useGuitar() {
     selectScale,
     addPatternScale,
     patternError,
+    generatedPlaybackSequence,
     selectedScaleName,
     selectedScale,
     notesPerString,

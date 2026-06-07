@@ -137,3 +137,23 @@ export const stepDeltasToScale = (
 
   return { pitchClasses: sorted, intervals, period: edo };
 };
+
+// Walk the signed deltas cumulatively from the root (first delta from the root,
+// each subsequent delta from the previous landed note) and keep repeating the
+// pattern beyond the octave until the running offset covers `spanSteps`. Returns
+// the ordered absolute step offsets from the root, clamped to the [0, spanSteps]
+// range so callers can map them onto the fretboard. This is the literal played
+// sequence; it is intentionally neither sorted nor octave-reduced.
+export const patternWalk = (deltas: number[], spanSteps: number): number[] => {
+  const walk = [0];
+  let offset = 0;
+
+  for (let cycle = 0; cycle < MAX_CYCLES && offset < spanSteps; cycle++) {
+    for (const delta of deltas) {
+      offset += delta;
+      walk.push(offset);
+    }
+  }
+
+  return walk.filter((step) => step >= 0 && step <= spanSteps);
+};

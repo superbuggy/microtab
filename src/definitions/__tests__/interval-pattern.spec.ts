@@ -3,6 +3,7 @@ import {
   parsePattern,
   intervalNameToSteps,
   stepDeltasToScale,
+  patternWalk,
 } from "../interval-pattern";
 
 const sum = (numbers: number[]) => numbers.reduce((a, b) => a + b, 0);
@@ -100,5 +101,22 @@ describe("stepDeltasToScale", () => {
     const { pitchClasses, intervals } = stepDeltasToScale([7, -5], 24);
     expect(pitchClasses[0]).toBe(0);
     expect(sum(intervals)).toBe(24);
+  });
+
+});
+
+describe("patternWalk", () => {
+  it("repeats the walk beyond the octave across the requested span", () => {
+    // +5 -1 keeps climbing past the octave (12) up to the 24-step span.
+    expect(patternWalk([5, -1], 24)).toEqual([
+      0, 5, 4, 9, 8, 13, 12, 17, 16, 21, 20, 24,
+    ]);
+  });
+
+  it("clamps the walk to the [0, span] range", () => {
+    const walk = patternWalk([5, -1], 12);
+    expect(Math.max(...walk)).toBeLessThanOrEqual(12);
+    expect(Math.min(...walk)).toBeGreaterThanOrEqual(0);
+    expect(walk[0]).toBe(0);
   });
 });
