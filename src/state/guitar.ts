@@ -1,13 +1,13 @@
 import type { GuitarTuning, PitchName, StringNumber, Note, Dict } from '@/definitions/types';
 import { watch, ref, computed } from "vue";
 import { useScales } from "@/definitions/scales";
-import { patternWalk } from "@/definitions/interval-pattern";
+import { buildPatternScale } from "@/definitions/pattern-scale";
 import { useTemperament } from "./temperament";
 import { useTuning } from "./tuning";
 import { PitchClass } from "@/definitions/types";
 const { TUNING } = useTuning();
 
-const { scaleNames, scalesFor, scaleFromPattern } = useScales();
+const { scaleNames, scalesFor } = useScales();
 const {
   distanceBetweenNotes,
   noteNames,
@@ -15,7 +15,6 @@ const {
   notesInTemperament,
   notesInTemperamentByPitch,
   notesDictionaryFor12Tet,
-  Note: NoteClass,
 } = useTemperament();
 
 const DEFAULT_STRING_QUANTITY = 6;
@@ -92,19 +91,6 @@ const fretboardSpanSteps = (): number => {
   const highestIndex =
     noteNames.value.indexOf(highestStringRoot) + frettableFretSpan.value;
   return Math.max(highestIndex - rootIndex, divisionsPerOctave.value);
-};
-
-// Build the exact notes a generated pattern walks through, anchored at the
-// lowest string's root so they land in the fretboard's range. The fretboard
-// renders these directly, which means it only shows notes that are actually
-// played (no octave-tiled positions the walk never reaches).
-const patternNotesFromSequence = (sequence: number[]): Note[] => {
-  const rootIndex = noteNames.value.indexOf(lowestNote.value);
-  const uniqueOffsets = Array.from(new Set(sequence)).sort((a, b) => a - b);
-  return uniqueOffsets
-    .map((offset) => noteNames.value[rootIndex + offset])
-    .filter((pitchName): pitchName is PitchName => Boolean(pitchName))
-    .map((pitchName) => new NoteClass.value(pitchName));
 };
 
 const allScaleNames = computed(() => [
@@ -200,13 +186,15 @@ export function useGuitar() {
     }
     try {
       const rootNoteName = lowestNote.value.replace(/\d/, "") as PitchClass;
-      const built = scaleFromPattern(name, rootNoteName) as Record<string, any>;
-      // Repeat the walk beyond the octave across the whole fretboard, then use
-      // that same sequence for both rendering and playback so the board shows
-      // exactly the notes that get played (no unplayed octave-tiled positions).
-      const walk = patternWalk(built.deltas, fretboardSpanSteps());
-      built.sequence = walk;
-      built.notes = patternNotesFromSequence(walk);
+      // Use the consolidated buildPatternScale which handles parse→walk→notes pipeline
+      const built = buildPatternScale(
+        name,
+        rootNoteName,
+        divisionsPerOctave.value,
+        noteNames.value,
+        notesInTemperament.value,
+        fretboardSpanSteps()
+      );
       customScales.value = { ...customScales.value, [name]: built };
       scales.value = { ...scales.value, [name]: built } as typeof scales.value;
       selectScale(name);
