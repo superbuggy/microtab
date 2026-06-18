@@ -1,26 +1,35 @@
-import { computed, ref, toRefs } from "vue";
+import { computed, ref } from "vue";
 import { objectMap } from "@/helpers";
 import { useTone } from "@/effects/tone";
 import { noteYCoord } from "./useFretboardGeometry";
+import type { Ref, ComputedRef } from "vue";
+import type { Note, PitchName } from "@/definitions/types";
 
-// ── Composable for fretboard notes and interactions ─────────────────────
+type MaybeRefOrComputed<T> = Ref<T> | ComputedRef<T>;
+type PitchDictionary = Record<string, { frequency: number }>;
+
+type StringNotesMap = Record<string, Array<{ note: Note; fretNumber: number; string: string; noteY: number }>>;
+
+function unwrap<T>(value: T | Ref<T> | ComputedRef<T>): T {
+  return value && typeof value === "object" && "value" in value
+    ? (value as Ref<T>).value
+    : (value as T);
+}
 
 export function useFretboardNotes(
-  tuningByStringNumber: any,
-  tuningByStringNumber12Tet: any,
-  scaleNotesOnStrings: any,
-  notesInTemperamentByPitch: any,
-  notesDictionaryFor12Tet: any,
-  shouldShow12TETFrets: any,
-  selectedScale: any,
-  pitchClassNames: any,
-  startingFromFret: any,
-  inputPitch: any,
-  stringNotes: any
+  tuningByStringNumber: MaybeRefOrComputed<Record<string, PitchName>>,
+  tuningByStringNumber12Tet: MaybeRefOrComputed<Record<string, PitchName>>,
+  scaleNotesOnStrings: MaybeRefOrComputed<Record<string, Array<{ note: Note; fretNumber: number }>>>,
+  notesInTemperamentByPitch: MaybeRefOrComputed<PitchDictionary>,
+  notesDictionaryFor12Tet: MaybeRefOrComputed<PitchDictionary> | PitchDictionary,
+  shouldShow12TETFrets: Ref<boolean>,
+  selectedScale: MaybeRefOrComputed<{ pitchClassNumbers: number[]; period: number; degrees: number }>,
+  pitchClassNames: MaybeRefOrComputed<string[]>,
+  startingFromFret: MaybeRefOrComputed<number>,
+  inputPitch: Ref<number | null>
 ) {
   const { playNote } = useTone();
 
-  // Popover state
   const popUpX = ref<number | null>(null);
   const popUpY = ref<number | null>(null);
   const popUpNote = ref<{ pitch: string } | null>(null);
@@ -34,44 +43,44 @@ export function useFretboardNotes(
     )
   );
 
-  const stringNotesComputed = computed(() => {
-    const reference = shouldShow12TETFrets.value ? notesDictionaryFor12Tet.value : notesInTemperamentByPitch.value;
-    const tuning = shouldShow12TETFrets.value ? tuningByStringNumber12Tet.value : tuningByStringNumber.value;
-    const stringRootFrequencies = objectMap(
-      tuning,
-      (_, pitchName: string) => reference[pitchName].frequency
+  const rootFrequenciesByStringNumber = computed((): Record<string, number> =>
+    objectMap(tuningByStringNumber.value, (_key, pitchName) =>
+      notesInTemperamentByPitch.value[pitchName as PitchName].frequency
+    )
+  );
+
+  const stringNotes = computed((): StringNotesMap => {
+    const reference = shouldShow12TETFrets.value
+      ? unwrap(notesDictionaryFor12Tet)
+      : notesInTemperamentByPitch.value;
+    const tuning = shouldShow12TETFrets.value
+      ? tuningByStringNumber12Tet.value
+      : tuningByStringNumber.value;
+    const stringRootFrequencies = objectMap(tuning, (_key, pitchName) =>
+      reference[pitchName as PitchName].frequency
     );
 
-    const notesWithDistances = objectMap(stringRootFrequencies, (string: string, rootFrequency: number) =>
-      scaleNotesOnStrings.value[string].map(({ note, fretNumber }: { note: any; fretNumber: number }) => ({
+    return objectMap(stringRootFrequencies, (string, rootFrequency) =>
+      scaleNotesOnStrings.value[string].map(({ note, fretNumber }) => ({
         note,
         fretNumber,
         string,
-        noteY: noteYCoord(rootFrequency, note.frequency),
+        noteY: noteYCoord(rootFrequency as number, note.frequency),
       }))
-    );
-
-    return notesWithDistances;
+    ) as StringNotesMap;
   });
 
   const detectedPitchStringsCoords = computed((): Record<string, number> | null => {
     if (inputPitch.value === null) return null;
-    return objectMap(rootFrequenciesByStringNumber.value, (_, rootFrequency: number) => {
-      return noteYCoord(rootFrequency, inputPitch.value as number);
-    });
-  });
-
-  const rootFrequenciesByStringNumber = computed((): Record<string, number> => {
-    return objectMap(
-      tuningByStringNumber.value,
-      (_, pitchName: string) => notesInTemperamentByPitch.value[pitchName].frequency
+    return objectMap(rootFrequenciesByStringNumber.value, (_key, rootFrequency) =>
+      noteYCoord(rootFrequency as number, inputPitch.value as number)
     );
   });
 
   function handleHover(event: Event, note: { pitch: string }) {
     const target = event.target as SVGElement;
-    popUpX.value = Number(target.getAttribute('cx'));
-    popUpY.value = Number(target.getAttribute('cy'));
+    popUpX.value = Number(target.getAttribute("cx"));
+    popUpY.value = Number(target.getAttribute("cy"));
     popUpNote.value = note;
   }
 
@@ -82,21 +91,15 @@ export function useFretboardNotes(
   }
 
   return {
-    // State
     popUpX,
     popUpY,
     popUpNote,
-    // Computed
     noteNames,
-    stringNotes: stringNotesComputed,
+    stringNotes,
     detectedPitchStringsCoords,
     rootFrequenciesByStringNumber,
-    // Functions
     handleHover,
     resetPopUp,
     playNote,
   };
 }
-
-// Import the pure function from geometry composable
-import { noteYCoord } from "./useFretboardGeometry";

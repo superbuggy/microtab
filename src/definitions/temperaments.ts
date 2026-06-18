@@ -1,14 +1,35 @@
 import { useTuning } from "../state/tuning";
 import { computed } from "vue";
-const { TUNING } = useTuning();
 import pitchMapJson from './12-tet-pitch-frequencies.json'
 import type { PitchMap, TetSchema } from "./types";
 
 const pitchMap: PitchMap = pitchMapJson;
 
+// Lazy initialization to avoid calling useTuning() at module evaluation time
+let _tuningRef: ReturnType<typeof useTuning> | null = null;
+function getTuningRef() {
+  if (!_tuningRef) {
+    try {
+      _tuningRef = useTuning();
+    } catch {
+      // Pinia not initialized yet
+      _tuningRef = null as any;
+    }
+  }
+  return _tuningRef;
+}
+
 // TODO: convert to ref
-const referencePitch = computed(()=>pitchMap[TUNING.value[0]]);
-const referenceName = computed(()=>TUNING.value[0].replace(/\d/g, ""));
+const referencePitch = computed(()=>{
+  const t = getTuningRef();
+  if (!t) return pitchMap['E2'] ?? 82.41;
+  return pitchMap[t.TUNING.value[0]] ?? pitchMap['E2'];
+});
+const referenceName = computed(()=>{
+  const t = getTuningRef();
+  if (!t) return 'E';
+  return t.TUNING.value[0].replace(/\d/g, "");
+});
 
 // TODO: Support enharmonicity, reduce equivalent pitches to integer, use those integer as keys
 

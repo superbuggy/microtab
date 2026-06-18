@@ -1,5 +1,9 @@
-import { computed, ref, toRefs } from "vue";
-import { isOdd, range, mapValueToRange, remPixels } from "@/helpers";
+import { computed, toRefs } from "vue";
+import type { ComputedRef, Ref } from "vue";
+import { range, mapValueToRange, remPixels } from "@/helpers";
+import type { SupportedEDOs, Note, PitchName } from "@/definitions/types";
+
+type MaybeRefOrComputed<T> = Ref<T> | ComputedRef<T>;
 
 // ── Constants ──────────────────────────────────────────────────────────
 
@@ -8,7 +12,7 @@ export const VIEWBOX_Y_MAX = 4000;
 export const xBoardStart = VIEWBOX_X_MAX / 4;
 export const yBoardStart = VIEWBOX_Y_MAX / 8;
 export const width = VIEWBOX_X_MAX / 2;
-export const fretboardLengthPx = VIEWBOX_Y_MAX / 8;
+export const fretboardLengthPx = VIEWBOX_Y_MAX / 2;
 export const SCALE_LENGTH = 25.5;
 
 // ── Pure geometry functions (no Vue dependencies) ──────────────────────
@@ -45,12 +49,12 @@ export function noteYCoord(
 // ── Composable for fretboard geometry state ────────────────────────────
 
 export function useFretboardGeometry(
-  divisionsPerOctave: any,
-  stringQuantity: any,
-  shouldShow12TETFrets: any,
-  tuningByStringNumber: any,
-  notesInTemperamentByPitch: any,
-  notesFor: any
+  divisionsPerOctave: MaybeRefOrComputed<SupportedEDOs>,
+  stringQuantity: MaybeRefOrComputed<number>,
+  shouldShow12TETFrets: Ref<boolean>,
+  tuningByStringNumber: MaybeRefOrComputed<Record<string, PitchName>>,
+  notesInTemperamentByPitch: MaybeRefOrComputed<Record<string, { frequency: number }>>,
+  notesFor: (octavalDivisions: number) => Note[]
 ) {
   const lowestStringRootFrequency = computed(() =>
     notesInTemperamentByPitch.value[tuningByStringNumber.value.string6]?.frequency ?? 0
@@ -86,15 +90,18 @@ export function useFretboardGeometry(
     }, [])
   );
 
-  const dottedFrets = computed(() => shouldShow12TETFrets.value
-    ? [3, 5, 7, 9, 12, 15, 17, 19, 21, 24]
-    : {
-        12: [3, 5, 7, 9, 12, 15, 17, 19, 21, 24],
-        16: [3, 5, 7, 9, 11, 13, 16, 19, 21, 23, 25, 27, 29, 32],
-        17: [4, 7, 10, 13, 17, 21, 24, 27, 30, 34],
-        24: [6, 10, 14, 18, 24, 30, 34, 38, 42, 48],
-        31: [8, 13, 18, 23, 31, 39, 44, 49, 54, 62],
-      }[divisionsPerOctave.value]
+  const dottedFretsByEdo: Record<SupportedEDOs, number[]> = {
+    12: [3, 5, 7, 9, 12, 15, 17, 19, 21, 24],
+    16: [3, 5, 7, 9, 11, 13, 16, 19, 21, 23, 25, 27, 29, 32],
+    17: [4, 7, 10, 13, 17, 21, 24, 27, 30, 34],
+    24: [6, 10, 14, 18, 24, 30, 34, 38, 42, 48],
+    31: [8, 13, 18, 23, 31, 39, 44, 49, 54, 62],
+  };
+
+  const dottedFrets = computed(() =>
+    shouldShow12TETFrets.value
+      ? [3, 5, 7, 9, 12, 15, 17, 19, 21, 24]
+      : dottedFretsByEdo[divisionsPerOctave.value]
   );
 
   const stringSpacing = width / (stringQuantity.value - 1);

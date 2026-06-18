@@ -1,25 +1,41 @@
 // Backward-compatible wrapper: re-exports from the Pinia store
+import { storeToRefs } from "pinia";
 import { useGuitarStore } from "@/stores/guitar";
 
 export function useGuitar() {
   const store = useGuitarStore();
+  const {
+    stringQuantity,
+    divisionsPerOctave,
+    tuningByStringNumber,
+    tuningByStringNumber12Tet,
+    scaleNotesOnStrings,
+    allScaleNames,
+    patternError,
+    generatedPlaybackSequence,
+    selectedScaleName,
+    selectedScale,
+    notesPerString,
+    startingFromFret,
+  } = storeToRefs(store);
+
   return {
-    stringQuantity: store.stringQuantity,
-    divisionsPerOctave: store.divisionsPerOctave,
-    tuningByStringNumber: store.tuningByStringNumber,
-    tuningByStringNumber12Tet: store.tuningByStringNumber12Tet,
+    stringQuantity,
+    divisionsPerOctave,
+    tuningByStringNumber,
+    tuningByStringNumber12Tet,
     stringNumbers: store.stringNumbers,
-    scaleNotesOnStrings: store.scaleNotesOnStrings,
-    scaleNames: store.allScaleNames,
+    scaleNotesOnStrings,
+    scaleNames: allScaleNames,
     selectScale: store.selectScale,
     addPatternScale: store.addPatternScale,
-    patternError: store.patternError,
-    generatedPlaybackSequence: store.generatedPlaybackSequence,
-    selectedScaleName: store.selectedScaleName,
-    selectedScale: store.selectedScale,
-    notesPerString: store.notesPerString,
+    patternError,
+    generatedPlaybackSequence,
+    selectedScaleName,
+    selectedScale,
+    notesPerString,
     selectNotesPerString: store.selectNotesPerString,
-    startingFromFret: store.startingFromFret,
+    startingFromFret,
   };
 }
 

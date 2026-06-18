@@ -5,7 +5,7 @@ import { scalarIntervallicDistances16EDO } from "./16-tet-scalar-intervals";
 import { scalarIntervallicDistances17EDO } from "./17-tet-scalar-intervals";
 import { scalarIntervallicDistances24EDO } from "./24-tet-scalar-intervals";
 import { scalarIntervallicDistances31EDO } from "./31-tet-scalar-intervals";
-import type { PitchClass, PatternScaleDefinition } from "./types";
+import type { PitchClass, PatternScaleDefinition, ScaleDefinition } from "./types";
 import { parsePattern, stepDeltasToScale } from "./interval-pattern";
 import { buildScalesForTemperament, generateScale, pitchClassNumbersFromIntervals } from "./scale-builder";
 
@@ -26,20 +26,12 @@ export function getIntervallicDistancesForTemperament(temperamentName: string): 
 
 // ── Vue composable (thin glue layer) ─────────────────────────────────
 
-const { chosenTemperamentName, notes, pitchClassNames } = useTemperament();
-
-const intervallicDistancesForChosenTemperament = computed(
-  () => getIntervallicDistancesForTemperament(chosenTemperamentName.value)
-);
-
-export const scaleNames = computed(() =>
-  Object.keys(intervallicDistancesForChosenTemperament.value)
-);
-
 /** Build built-in scales for the active temperament at a given root. */
-const scalesFor = (rootNoteName: PitchClass): Record<string, any> => {
+const scalesFor = (rootNoteName: PitchClass): Record<string, ScaleDefinition> => {
+  const { chosenTemperamentName, notes, pitchClassNames } = useTemperament();
+  const intervallicDistances = getIntervallicDistancesForTemperament(chosenTemperamentName.value);
   return buildScalesForTemperament(
-    intervallicDistancesForChosenTemperament.value,
+    intervallicDistances,
     rootNoteName,
     pitchClassNames.value,
     notes.value
@@ -48,6 +40,7 @@ const scalesFor = (rootNoteName: PitchClass): Record<string, any> => {
 
 /** Build a scale from an interval pattern string (e.g. "+m3 +m3 +M2"). */
 const scaleFromPattern = (input: string, rootNoteName: PitchClass): PatternScaleDefinition => {
+  const { pitchClassNames, notes } = useTemperament();
   const edo = pitchClassNames.value.length;
   const deltas = parsePattern(input, edo);
   const { intervals, period } = stepDeltasToScale(deltas, edo);
@@ -65,6 +58,16 @@ const scaleFromPattern = (input: string, rootNoteName: PitchClass): PatternScale
 };
 
 export function useScales() {
+  const { chosenTemperamentName } = useTemperament();
+  
+  const intervallicDistancesForChosenTemperament = computed(
+    () => getIntervallicDistancesForTemperament(chosenTemperamentName.value)
+  );
+
+  const scaleNames = computed(() =>
+    Object.keys(intervallicDistancesForChosenTemperament.value)
+  );
+
   return {
     scaleNames,
     scalesFor,

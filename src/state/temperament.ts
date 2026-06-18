@@ -1,23 +1,37 @@
 // Backward-compatible wrapper: re-exports from the Pinia store
+import { storeToRefs } from "pinia";
 import { useTemperamentStore } from "@/stores/temperament";
 
 export function useTemperament() {
   const store = useTemperamentStore();
+  const {
+    noteNames,
+    notes,
+    notesDictionary,
+    notesInTemperament,
+    notesInTemperamentByPitch,
+    Note,
+    pitchClassNames,
+    chosenTemperamentName,
+    chosenTemperament,
+    divisionsPerOctave,
+  } = storeToRefs(store);
+
   return {
-    noteNames: store.noteNames,
-    notes: store.notes,
-    notesDictionary: store.notesDictionary,
+    noteNames,
+    notes,
+    notesDictionary,
     notesFor: store.notesFor,
     notesDictionaryFor: store.notesDictionaryFor,
-    notesInTemperament: store.notesInTemperament,
-    notesInTemperamentByPitch: store.notesInTemperamentByPitch,
-    Note: store.Note,
+    notesInTemperament,
+    notesInTemperamentByPitch,
+    Note,
     noteFromStepsAbove: store.noteFromStepsAbove,
     distanceBetweenNotes: store.distanceBetweenNotes,
-    pitchClassNames: store.pitchClassNames,
-    chosenTemperamentName: store.chosenTemperamentName,
-    chosenTemperament: store.chosenTemperament,
-    divisionsPerOctave: store.divisionsPerOctave,
+    pitchClassNames,
+    chosenTemperamentName,
+    chosenTemperament,
+    divisionsPerOctave,
     chooseTemperament: store.chooseTemperament,
     temperamentNames: store.temperamentNames,
     notesDictionaryFor12Tet: store.notesDictionaryFor12Tet,

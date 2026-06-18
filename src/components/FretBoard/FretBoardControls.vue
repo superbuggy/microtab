@@ -5,15 +5,12 @@ const { chooseTemperament, chosenTemperamentName, temperamentNames } = useTemper
 import { useGuitar } from "@/state/guitar";
 import { useTone } from "@/effects/tone";
 import { useFretBoardControls } from "@/state/fretboard-controls";
+import { useScalePlayback } from "@/composables/useScalePlayback";
 import { ref } from "vue";
 
 const { shouldShow12TETFrets } = useFretBoardControls();
 
-// import * as Tone from "tone";
-
-// const tempo = ref(120);
-
-const { changeTempo, tempo, isLooped, bps, playNoteSequence, stopPlayback } = useTone();
+const { changeTempo, tempo, isLooped, bps } = useTone();
 
 const {
   scaleNames,
@@ -27,41 +24,18 @@ const {
   patternError,
   generatedPlaybackSequence,
 } = useGuitar();
-const isPlayingSequence = ref(false);
+
+const { isPlayingSequence, playScale, stopPlayingScale } = useScalePlayback(
+  generatedPlaybackSequence,
+  scaleNotesOnStrings,
+  bps
+);
+
 const patternInput = ref("");
 
 function submitPattern() {
   addPatternScale(patternInput.value);
   if (!patternError.value) patternInput.value = "";
-}
-
-function playScale() {
-  isPlayingSequence.value = true;
-  // A generated pattern carries its own walk order; play that when present so
-  // playback reflects the pattern. Otherwise keep each note tied to the string
-  // it lives on so playback can highlight the correct fretted-note element (a
-  // given pitch can appear on several strings).
-  const ascending =
-    generatedPlaybackSequence.value ??
-    Object.entries(scaleNotesOnStrings.value).flatMap(([string, notes]) =>
-      notes.map(({ note }: { note: { frequency: number } }) => ({
-        note: [note.frequency],
-        id: `note-${string}-${note.frequency}-hz`,
-      }))
-    );
-  const sequence = [...ascending, ...ascending.slice().reverse()];
-  const notesToPlay = sequence.map((event, index) => ({
-    ...event,
-    time: index / bps.value,
-  }));
-  const onEnd = () => (isPlayingSequence.value = false);
-
-  playNoteSequence(notesToPlay, onEnd);
-}
-
-function stopPlayingScale() {
-  isPlayingSequence.value = false;
-  stopPlayback();
 }
 </script>
 

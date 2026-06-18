@@ -40,8 +40,10 @@ watch(isInEditMode, async () => {
 });
 
 const startingFret = ref(lowestChordNote());
-const fretSpan = Math.round(REACHABLE_FRETS_PERCENTAGE * divisionsPerOctave.value);
-const endingFret = computed(() => startingFret.value + fretSpan);
+const fretSpan = computed(() =>
+  Math.round(REACHABLE_FRETS_PERCENTAGE * divisionsPerOctave.value)
+);
+const endingFret = computed(() => startingFret.value + fretSpan.value);
 const reachableFrets = computed(() => range(startingFret.value, endingFret.value));
 const fretDots = computed(() =>
   [3, 5, 7, 9, 12, 15, 17, 19, 21, 24]
@@ -50,7 +52,7 @@ const fretDots = computed(() =>
 );
 
 const stringSpacing = width / (stringQuantity.value - 1);
-const fretSpacing = height / fretSpan;
+const fretSpacing = computed(() => height / fretSpan.value);
 const fontSize = remPixels() * 2.5;
 const textOffsetX = 0.75 * fontSize;
 const textOffsetY = 0.33 * fontSize;

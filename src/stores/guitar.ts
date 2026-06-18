@@ -1,92 +1,23 @@
-import { defineStore } from "pinia";
-import { computed, ref, watch, computed as vueComputed } from "vue";
-import type { GuitarTuning, PitchName, StringNumber, Note, Dict, PitchClass } from "@/definitions/types";
-import { useScales } from "@/definitions/scales";
+import { defineStore, storeToRefs } from "pinia";
+import { computed, ref, watch } from "vue";
+import type {
+  GuitarTuning,
+  PitchName,
+  StringNumber,
+  Note,
+  Dict,
+  PitchClass,
+  ScaleDefinition,
+  PatternScaleDefinition,
+} from "@/definitions/types";
 import { buildPatternScale } from "@/definitions/pattern-scale";
 import { layoutScaleOnStrings } from "@/definitions/fretboard-layout";
 import { buildPlaybackSequence } from "@/definitions/playback-sequence";
 import { useTemperamentStore } from "./temperament";
 import { useTuning } from "@/state/tuning";
-
-const { TUNING } = useTuning();
-const { scaleNames, scalesFor } = useScales();
-const temperament = useTemperamentStore();
-
-const {
-  distanceBetweenNotes,
-  noteNames,
-  divisionsPerOctave,
-  notesInTemperament,
-  notesInTemperamentByPitch,
-  notesDictionaryFor12Tet,
-} = temperament;
+import { useScales } from "@/definitions/scales";
 
 const DEFAULT_STRING_QUANTITY = 6;
-
-const stringQuantity = ref(DEFAULT_STRING_QUANTITY);
-const stringNumbers = Array.from({ length: stringQuantity.value }).map(
-  (_, index, { length }) => length - index
-);
-
-const nearestPitchInTemperament = (targetFrequency: number): PitchName =>
-  notesInTemperament.value.reduce((nearest, note) =>
-    Math.abs(note.frequency - targetFrequency) <
-    Math.abs(nearest.frequency - targetFrequency)
-      ? note
-      : nearest
-  ).pitch;
-
-const resolveTuningPitch = (pitchName: PitchName): PitchName => {
-  if (notesInTemperamentByPitch.value[pitchName]) return pitchName;
-  const target = notesDictionaryFor12Tet[pitchName]?.frequency;
-  return target == null ? pitchName : nearestPitchInTemperament(target);
-};
-
-const tuningByStringNumber = computed<GuitarTuning>(() =>
-  Object.fromEntries(
-    stringNumbers.map((stringNumber, index) => [
-      `string${stringNumber}`,
-      resolveTuningPitch(TUNING.value[index]),
-    ])
-  )
-);
-
-const tuningByStringNumber12Tet = computed<GuitarTuning>(() =>
-  Object.fromEntries(
-    stringNumbers.map((stringNumber, index) => [
-      `string${stringNumber}`,
-      TUNING.value[index],
-    ])
-  )
-);
-
-const startingFromFret = ref(0);
-
-const lowestNote = computed<PitchName>(
-  () => tuningByStringNumber.value[`string${stringNumbers[0]}`]
-);
-
-const scales = ref<Record<string, any>>({});
-const selectedScaleName = ref("Ionian");
-
-const customScales = ref<Record<string, any>>({});
-const patternError = ref("");
-
-const selectedScale = computed(() => scales.value[selectedScaleName.value]);
-
-const fretboardSpanSteps = (): number => {
-  const rootIndex = noteNames.value.indexOf(lowestNote.value);
-  const highestStringRoot =
-    tuningByStringNumber.value[`string${stringNumbers.at(-1)}` as StringNumber];
-  const highestIndex =
-    noteNames.value.indexOf(highestStringRoot) + frettableFretSpan.value;
-  return Math.max(highestIndex - rootIndex, divisionsPerOctave.value);
-};
-
-const allScaleNames = computed(() => [
-  ...scaleNames.value,
-  ...Object.keys(customScales.value),
-]);
 
 const defaultScalesPerTet: Record<number, string> = {
   12: "Ionian [7]",
@@ -96,19 +27,113 @@ const defaultScalesPerTet: Record<number, string> = {
   31: "Ionian [7]",
 };
 
-watch([divisionsPerOctave, lowestNote], ([perOctave, currentLowestNote]) => {
-  selectedScaleName.value = defaultScalesPerTet[perOctave];
-  customScales.value = {};
-  patternError.value = "";
-  scales.value = scalesFor(currentLowestNote.replace(/\d/, "") as PitchClass);
-});
-
-const notesPerString = ref<number | null>(3);
-
-const FRETTED_OCTAVES = 2;
-const frettableFretSpan = computed(() => FRETTED_OCTAVES * divisionsPerOctave.value);
-
 export const useGuitarStore = defineStore("guitar", () => {
+  const temperamentStore = useTemperamentStore();
+  const { distanceBetweenNotes, notesDictionaryFor12Tet } = temperamentStore;
+  const {
+    noteNames,
+    divisionsPerOctave,
+    notesInTemperament,
+    notesInTemperamentByPitch,
+  } = storeToRefs(temperamentStore);
+
+  const { TUNING } = useTuning();
+  const { scaleNames, scalesFor } = useScales();
+
+  const stringQuantity = ref(DEFAULT_STRING_QUANTITY);
+  const stringNumbers = Array.from({ length: stringQuantity.value }).map(
+    (_, index, { length }) => length - index
+  );
+
+  const nearestPitchInTemperament = (targetFrequency: number): PitchName =>
+    notesInTemperament.value.reduce((nearest: Note, note: Note) =>
+      Math.abs(note.frequency - targetFrequency) <
+      Math.abs(nearest.frequency - targetFrequency)
+        ? note
+        : nearest
+    ).pitch;
+
+  const resolveTuningPitch = (pitchName: PitchName): PitchName => {
+    if (notesInTemperamentByPitch.value[pitchName]) return pitchName;
+    const target = notesDictionaryFor12Tet[pitchName]?.frequency;
+    return target == null ? pitchName : nearestPitchInTemperament(target);
+  };
+
+  const tuningByStringNumber = computed<GuitarTuning>(() =>
+    Object.fromEntries(
+      stringNumbers.map((stringNumber, index) => [
+        `string${stringNumber}`,
+        resolveTuningPitch(TUNING.value[index]),
+      ])
+    ) as GuitarTuning
+  );
+
+  const tuningByStringNumber12Tet = computed<GuitarTuning>(() =>
+    Object.fromEntries(
+      stringNumbers.map((stringNumber, index) => [
+        `string${stringNumber}`,
+        TUNING.value[index],
+      ])
+    ) as GuitarTuning
+  );
+
+  const startingFromFret = ref(0);
+
+  const lowestNote = computed<PitchName>(
+    () => tuningByStringNumber.value[`string${stringNumbers[0]}`]
+  );
+
+  const builtInScales = ref<Record<string, ScaleDefinition>>({});
+  const patternScales = ref<Record<string, PatternScaleDefinition>>({});
+  const selectedScaleName = ref("Ionian");
+  const patternError = ref("");
+
+  const allScales = computed(() => ({
+    ...builtInScales.value,
+    ...patternScales.value,
+  }));
+
+  const selectedScale = computed(
+    () => allScales.value[selectedScaleName.value]
+  );
+
+  const fretboardSpanSteps = (): number => {
+    const rootIndex = noteNames.value.indexOf(lowestNote.value);
+    const highestStringRoot =
+      tuningByStringNumber.value[`string${stringNumbers.at(-1)}` as StringNumber];
+    const highestIndex =
+      noteNames.value.indexOf(highestStringRoot) + frettableFretSpan.value;
+    return Math.max(highestIndex - rootIndex, divisionsPerOctave.value);
+  };
+
+  const allScaleNames = computed(() => [
+    ...scaleNames.value,
+    ...Object.keys(patternScales.value),
+  ]);
+
+  const refreshBuiltInScales = () => {
+    const root = lowestNote.value.replace(/\d/, "") as PitchClass;
+    builtInScales.value = scalesFor(root);
+  };
+
+  watch(
+    [divisionsPerOctave, lowestNote],
+    ([perOctave]) => {
+      selectedScaleName.value = defaultScalesPerTet[perOctave];
+      patternScales.value = {};
+      patternError.value = "";
+      refreshBuiltInScales();
+    },
+    { immediate: true }
+  );
+
+  const notesPerString = ref<number | null>(3);
+
+  const FRETTED_OCTAVES = 2;
+  const frettableFretSpan = computed(
+    () => FRETTED_OCTAVES * divisionsPerOctave.value
+  );
+
   const selectNotesPerString = (perString: string) => {
     notesPerString.value = perString === "All" ? null : Number(perString);
   };
@@ -125,17 +150,15 @@ export const useGuitarStore = defineStore("guitar", () => {
       return;
     }
     try {
-      const rootNoteName = lowestNote.value.replace(/\d/, "") as PitchClass;
       const built = buildPatternScale(
         name,
-        rootNoteName,
+        lowestNote.value,
         divisionsPerOctave.value,
         noteNames.value,
         notesInTemperament.value,
         fretboardSpanSteps()
       );
-      customScales.value = { ...customScales.value, [name]: built };
-      scales.value = { ...scales.value, [name]: built } as typeof scales.value;
+      patternScales.value = { ...patternScales.value, [name]: built };
       selectScale(name);
     } catch (error) {
       patternError.value = (error as Error).message;
@@ -158,13 +181,10 @@ export const useGuitarStore = defineStore("guitar", () => {
 
   const scaleNotesOnStrings = computed<Dict>(() => fretboardScale.value);
 
-  type PlaybackEvent = { note: number[]; id?: string };
-  const generatedPlaybackSequence = computed<PlaybackEvent[] | null>(() => {
-    const current = selectedScale.value as
-      | { sequence?: number[] }
-      | undefined;
+  const generatedPlaybackSequence = computed(() => {
+    const current = selectedScale.value as PatternScaleDefinition | undefined;
     return buildPlaybackSequence({
-      offsets: current?.sequence,
+      offsets: current?.walk,
       lowestNote: lowestNote.value,
       noteNames: noteNames.value,
       notesInTemperamentByPitch: notesInTemperamentByPitch.value,
@@ -172,32 +192,27 @@ export const useGuitarStore = defineStore("guitar", () => {
     });
   });
 
-  // Initialize default scale selection
-  selectScale(selectedScaleName.value);
-
   return {
-    // State
     stringQuantity,
     stringNumbers,
     startingFromFret,
-    scales,
+    builtInScales,
+    patternScales,
+    allScales,
     selectedScaleName,
-    customScales,
     patternError,
     notesPerString,
-    // Computed
     tuningByStringNumber,
     tuningByStringNumber12Tet,
     lowestNote,
     divisionsPerOctave,
     selectedScale,
-    allScaleNames: allScaleNames,
+    allScaleNames,
     fretboardSpanSteps,
     frettableFretSpan,
     fretboardScale,
     scaleNotesOnStrings,
     generatedPlaybackSequence,
-    // Actions
     selectNotesPerString,
     selectScale,
     addPatternScale,

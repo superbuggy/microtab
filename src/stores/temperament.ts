@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, ref, computed as vueComputed } from "vue";
+import { computed, ref } from "vue";
 import {
   tet12schema,
   tet16schema,
@@ -9,7 +9,7 @@ import {
 } from "@/definitions/temperaments";
 import { TET, noteInTET } from "@/definitions/TET";
 import { setKeyIn } from "@/helpers";
-import type { PitchName } from "@/definitions/types";
+import type { PitchName, SupportedEDOs } from "@/definitions/types";
 
 const schemas = [tet12schema, tet16schema, tet17schema, tet24schema, tet31schema];
 const equalTemperaments = schemas.map((schema) => new TET(schema));
@@ -22,36 +22,37 @@ export const useTemperamentStore = defineStore("temperament", () => {
     Object.keys(temperaments)[3] // Default to 24 TET
   );
 
-  const chosenTemperament = vueComputed(
+  const chosenTemperament = computed(
     () => temperaments[chosenTemperamentName.value]
   );
 
-  const Note = vueComputed(() => noteInTET(chosenTemperament.value));
+  const Note = computed(() => noteInTET(chosenTemperament.value));
 
-  const noteNames = vueComputed(() => chosenTemperament.value.pitchNames);
-  const pitchClassNames = vueComputed(() => chosenTemperament.value.pitchClassNames);
+  const noteNames = computed(() => chosenTemperament.value.pitchNames);
+  const pitchClassNames = computed(() => chosenTemperament.value.pitchClassNames);
 
-  const notes = vueComputed(() =>
+  const notes = computed(() =>
     chosenTemperament.value.pitchNames.map(
       (pitchName) => new Note.value(pitchName)
     )
   );
 
-  const notesDictionary = vueComputed(() =>
+  const notesDictionary = computed(() =>
     notes.value.reduce(
       (dictionary, note) => setKeyIn(dictionary, note.pitch, note),
       {}
     )
   );
 
-  const divisionsPerOctave = vueComputed(() =>
-    ({
-      "12 TET": 12,
-      "16 TET": 16,
-      "17 TET": 17,
-      "24 TET": 24,
-      "31 TET": 31,
-    }[chosenTemperamentName.value])
+  const divisionsPerOctave = computed(
+    (): SupportedEDOs =>
+      ({
+        "12 TET": 12,
+        "16 TET": 16,
+        "17 TET": 17,
+        "24 TET": 24,
+        "31 TET": 31,
+      }[chosenTemperamentName.value] as SupportedEDOs)
   );
 
   const noteFromStepsAbove = (referenceNoteName: string, stepsAbove: number) =>
@@ -81,8 +82,10 @@ export const useTemperamentStore = defineStore("temperament", () => {
     );
   };
 
-  const notesInTemperament = vueComputed(() => notesFor(divisionsPerOctave.value));
-  const notesInTemperamentByPitch = vueComputed(() => notesDictionaryFor(divisionsPerOctave.value));
+  const notesInTemperament = computed(() => notesFor(divisionsPerOctave.value));
+  const notesInTemperamentByPitch = computed(() =>
+    notesDictionaryFor(divisionsPerOctave.value)
+  );
   const notesDictionaryFor12Tet = notesDictionaryFor(12);
 
   const chooseTemperament = (temperamentName: string) => {

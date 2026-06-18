@@ -80,8 +80,7 @@ const {
   selectedScale,
   pitchClassNames,
   startingFromFret,
-  inputPitch,
-  null // stringNotes will be computed from the composable
+  inputPitch
 );
 
 function hue (degree: number, upperBound: number) {
