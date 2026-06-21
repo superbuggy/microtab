@@ -156,6 +156,14 @@ export const midiNoteNumberToPitchName = (
   );
 };
 
+export function hue(degree: number, upperBound: number): number {
+  return (360 * degree) / upperBound;
+}
+
+export function hsl(degree: number, upperBound: number, l = 75): string {
+  return `hsl(${hue(degree, upperBound)}, 100%, ${l}%)`;
+}
+
 export const A_440_MIDI_NOTE_NUMBER = 69;
 export const A_440 = 440;
 

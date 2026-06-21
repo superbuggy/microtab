@@ -2,7 +2,7 @@
 import FretBoardControls from "./FretBoardControls.vue";
 import PopOver from "@/components/PopOver.vue";
 
-import { isOdd } from "@/helpers";
+import { isOdd, hsl } from "@/helpers";
 
 import { useGuitar } from "@/state/guitar";
 import { useTemperament } from "@/state/temperament";
@@ -82,14 +82,6 @@ const {
   startingFromFret,
   inputPitch
 );
-
-function hue (degree: number, upperBound: number) {
-  return (360 * degree) / upperBound;
-}
-
-function hsl (degree: number, upperBound: number, l = 75) {
-  return `hsl(${hue(degree, upperBound)}, 100%, ${l}%)`;
-}
 
 function hslForNote (note: { pitchClassNumber: number }, l = 50) {
   const degree = selectedScale.value.pitchClassNumbers
