@@ -19,6 +19,12 @@ import {
 } from "@/composables/useFretboardGeometry";
 import { layoutFretlessOnStrings, deviationFrom12TET, type FretlessGuide } from "@/definitions/fretless-layout";
 import { TEMPERAMENT_PRESETS } from "@/definitions/rtt";
+import {
+  primeFamilyScaleText,
+  nejiQuantize,
+  isPrime,
+  adjectiveForPrime,
+} from "@/definitions/primodality";
 
 const { playNote } = useTone();
 const { shouldShow12TETFrets } = useFretBoardControls();
@@ -116,6 +122,45 @@ function commitTuning(stringNumber: string, event: Event) {
   const value = Number((event.target as HTMLInputElement).value);
   setStringRootFrequency(stringNumber, value);
 }
+
+// ── Primodal generator ───────────────────────────────────────────────────
+
+const primodalPrime = ref(13);
+const primodalMode = ref(1);
+const primodalNeji = ref(false);
+const primodalError = ref("");
+
+const PRIMODAL_PRIMES = [7, 11, 13, 17, 19, 23, 29, 31];
+
+const PRIMODAL_ADJECTIVES: Record<number, string> = Object.fromEntries(
+  PRIMODAL_PRIMES.map((prime) => [prime, adjectiveForPrime(prime)])
+);
+
+function generatePrimodalScale() {
+  primodalError.value = "";
+  try {
+    if (primodalNeji.value) {
+      const { ratios } = nejiQuantize(primodalPrime.value, { mode: primodalMode.value });
+      const lines = ratios.map(({ n, d }) =>
+        d === 1n ? `${n}` : `${n}/${d}`
+      );
+      scaleText.value = lines.join("\n");
+    } else {
+      scaleText.value = primeFamilyScaleText(primodalPrime.value, {
+        mode: primodalMode.value,
+      });
+    }
+  } catch (error) {
+    primodalError.value = (error as Error).message;
+  }
+}
+
+const primodalDescription = computed(() => {
+  const prime = primodalPrime.value;
+  if (!isPrime(prime)) return `${prime} is not a prime`;
+  const octave = primodalMode.value === 1 ? "first" : primodalMode.value === 2 ? "second" : `${primodalMode.value}th`;
+  return `${octave} octave of /${prime} (${PRIMODAL_ADJECTIVES[prime] ?? adjectiveForPrime(prime)})`;
+});
 </script>
 
 <template>
@@ -198,6 +243,57 @@ function commitTuning(stringNumber: string, event: Event) {
           @change="commitTuning(stringNumber, $event)"
         >
       </label>
+    </div>
+    <div class="primodal-generator">
+      <label>
+        Prime family
+        <select v-model.number="primodalPrime">
+          <option
+            v-for="prime in PRIMODAL_PRIMES"
+            :key="prime"
+            :value="prime"
+          >
+            /{{ prime }} ({{ PRIMODAL_ADJECTIVES[prime] }})
+          </option>
+        </select>
+      </label>
+      <label>
+        Octave
+        <select v-model.number="primodalMode">
+          <option :value="1">
+            Mode p
+          </option>
+          <option :value="2">
+            Mode 2p
+          </option>
+          <option :value="3">
+            Mode 3p
+          </option>
+        </select>
+      </label>
+      <label>
+        neji
+        <input
+          v-model="primodalNeji"
+          type="checkbox"
+        >
+      </label>
+      <button @click="generatePrimodalScale">
+        Generate primodal scale
+      </button>
+      <span
+        v-if="primodalError"
+        role="alert"
+        class="parse-error"
+      >
+        {{ primodalError }}
+      </span>
+      <span
+        v-else
+        class="primodal-description"
+      >
+        {{ primodalDescription }}
+      </span>
     </div>
   </section>
 
@@ -327,10 +423,15 @@ function commitTuning(stringNumber: string, event: Event) {
   }
 
   .fretless-tuning,
-  .fretless-string-tunings {
+  .fretless-string-tunings,
+  .primodal-generator {
     display: flex;
     gap: 1rem;
     align-items: center;
+  }
+
+  .primodal-description {
+    font-style: italic;
   }
 }
 
