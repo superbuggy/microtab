@@ -18,6 +18,7 @@ import {
   noteYCoord,
 } from "@/composables/useFretboardGeometry";
 import { layoutFretlessOnStrings, deviationFrom12TET, type FretlessGuide } from "@/definitions/fretless-layout";
+import { TEMPERAMENT_PRESETS } from "@/definitions/rtt";
 
 const { playNote } = useTone();
 const { shouldShow12TETFrets } = useFretBoardControls();
@@ -26,10 +27,16 @@ const {
   periods,
   parseError,
   tiled,
+  temperedTiled,
+  temperamentName,
+  tuningScheme,
+  generatorCents,
   stringRootFrequencies,
   setStringRootFrequency,
   resetTuning,
 } = useFretlessScale();
+
+const TEMPERAMENT_NAMES = ["none", ...TEMPERAMENT_PRESETS.map((preset) => preset.name)];
 
 const stringNumbers = computed(() =>
   Object.keys(stringRootFrequencies.value).sort().reverse()
@@ -39,10 +46,16 @@ const stringSpacing = computed(() => (stringCount.value > 1 ? width / (stringCou
 
 type PositionedGuide = FretlessGuide & { string: string; y: number };
 
-// Guides per string with SVG y coordinates derived from Mersenne's law.
-const guidesByString = computed((): Record<string, PositionedGuide[]> => {
-  if (!tiled.value) return {};
-  const laidOut = layoutFretlessOnStrings(tiled.value, stringRootFrequencies.value);
+const temperamentActive = computed(
+  () => Boolean(temperedTiled.value && generatorCents.value)
+);
+
+// Guides per string with SVG y coordinates derived from Mersenne's law. When a
+// temperament is active the tempered positions drive the main guides and the
+// untempered just positions become ghost markers.
+const guidesFor = (source: typeof tiled.value): Record<string, PositionedGuide[]> => {
+  if (!source) return {};
+  const laidOut = layoutFretlessOnStrings(source, stringRootFrequencies.value);
   return Object.fromEntries(
     Object.entries(laidOut).map(([stringNumber, guides]) => [
       stringNumber,
@@ -53,7 +66,12 @@ const guidesByString = computed((): Record<string, PositionedGuide[]> => {
       })),
     ])
   );
-});
+};
+
+const guidesByString = computed(() => guidesFor(temperamentActive.value ? temperedTiled.value : tiled.value));
+const justGuidesByString = computed(() =>
+  temperamentActive.value ? guidesFor(tiled.value) : {}
+);
 
 // Ghost 12-TET fret lines for reference, computed from the lowest string.
 const tet12Lines = computed(() => {
@@ -85,6 +103,14 @@ function resetPopUp() {
   popUpX.value = null;
   popUpY.value = null;
 }
+
+// How far the tempered position sits from its untempered just source.
+const deviationFromJust = (guide: PositionedGuide): number | null => {
+  const just = justGuidesByString.value[guide.string]?.find(
+    (candidate) => candidate.degreeIndex === guide.degreeIndex
+  );
+  return just ? guide.centsAboveRoot - just.centsAboveRoot : null;
+};
 
 function commitTuning(stringNumber: string, event: Event) {
   const value = Number((event.target as HTMLInputElement).value);
@@ -119,6 +145,35 @@ function commitTuning(stringNumber: string, event: Event) {
           max="4"
         >
       </label>
+      <label>
+        Temperament
+        <select v-model="temperamentName">
+          <option
+            v-for="name in TEMPERAMENT_NAMES"
+            :key="name"
+            :value="name"
+          >
+            {{ name }}
+          </option>
+        </select>
+      </label>
+      <label v-if="temperamentActive">
+        Tuning
+        <select v-model="tuningScheme">
+          <option value="pote">
+            POTE
+          </option>
+          <option value="cte">
+            CTE
+          </option>
+        </select>
+      </label>
+      <span
+        v-if="temperamentActive && generatorCents"
+        class="gen-cents"
+      >
+        gen: {{ generatorCents.slice(1).map((c) => c.toFixed(2)).join(" ") }} c
+      </span>
       <label>
         12TET guides
         <input
@@ -185,6 +240,23 @@ function commitTuning(stringNumber: string, event: Event) {
           v-for="(guides, stringNumber) in guidesByString"
           :key="stringNumber"
         >
+          <!-- Untempered just positions as ghosts when tempering -->
+          <g
+            v-for="guide in (justGuidesByString[stringNumber] || [])"
+            :key="`ji-${stringNumber}-${guide.degreeIndex}`"
+          >
+            <circle
+              class="just-ghost"
+              :cx="(stringNumbers.indexOf(stringNumber)) * stringSpacing + xBoardStart"
+              :cy="guide.y"
+              :r="Math.min(stringSpacing / 9)"
+              fill="transparent"
+              :stroke="hueForGuide(guide)"
+              stroke-width="2"
+            >
+              <title>just: {{ guide.ratioText ?? `${guide.centsAboveRoot.toFixed(1)}c` }}</title>
+            </circle>
+          </g>
           <g
             v-for="guide in (guides as PositionedGuide[])"
             :key="`${stringNumber}-${guide.degreeIndex}`"
@@ -223,7 +295,12 @@ function commitTuning(stringNumber: string, event: Event) {
         <p>
           {{ popUpGuide.ratioText ?? `${popUpGuide.centsAboveRoot.toFixed(2)} cents` }}
           · {{ popUpGuide.frequency.toFixed(2) }} Hz
-          <template v-if="popUpGuide.ratioText">
+          <template v-if="temperamentActive && deviationFromJust(popUpGuide) !== null">
+            · {{ deviationFromJust(popUpGuide)! >= 0 ? '+' : '' }}{{
+              deviationFromJust(popUpGuide)!.toFixed(1)
+            }}c vs JI
+          </template>
+          <template v-else-if="popUpGuide.ratioText">
             · {{ deviationFrom12TET(popUpGuide.centsAboveRoot) >= 0 ? '+' : '' }}{{
               deviationFrom12TET(popUpGuide.centsAboveRoot).toFixed(1)
             }}c vs 12TET
@@ -288,6 +365,15 @@ function commitTuning(stringNumber: string, event: Event) {
 
     line.guide-tick {
       stroke-width: 3;
+    }
+
+    circle.just-ghost {
+      pointer-events: all;
+      cursor: help;
+    }
+
+    span.gen-cents {
+      font-family: monospace;
     }
 
     circle.fretted-note {
