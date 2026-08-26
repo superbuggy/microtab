@@ -5,7 +5,7 @@ import PopOver from "@/components/PopOver.vue";
 import { hsl } from "@/helpers";
 import { useTone } from "@/effects/tone";
 
-import { useFretlessScale } from "@/state/fretless";
+import { useFretlessScale, fretlessShareUrl } from "@/state/fretless";
 import { useFretBoardControls } from "@/state/fretboard-controls";
 
 import {
@@ -161,6 +161,18 @@ const primodalDescription = computed(() => {
   const octave = primodalMode.value === 1 ? "first" : primodalMode.value === 2 ? "second" : `${primodalMode.value}th`;
   return `${octave} octave of /${prime} (${PRIMODAL_ADJECTIVES[prime] ?? adjectiveForPrime(prime)})`;
 });
+
+const shareLinkCopied = ref(false);
+
+async function copyShareLink() {
+  try {
+    await navigator.clipboard.writeText(fretlessShareUrl());
+    shareLinkCopied.value = true;
+    setTimeout(() => (shareLinkCopied.value = false), 2000);
+  } catch {
+    shareLinkCopied.value = false;
+  }
+}
 </script>
 
 <template>
@@ -294,6 +306,11 @@ const primodalDescription = computed(() => {
       >
         {{ primodalDescription }}
       </span>
+    </div>
+    <div class="share-row">
+      <button @click="copyShareLink">
+        {{ shareLinkCopied ? "Link copied" : "Copy share link" }}
+      </button>
     </div>
   </section>
 
