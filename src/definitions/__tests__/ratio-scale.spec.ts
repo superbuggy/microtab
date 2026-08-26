@@ -15,33 +15,42 @@ describe("tileParsedScale", () => {
     const parsed = scaleFromText("9/8\n5/4\n4/3\n3/2\n5/3\n15/8\n2");
     const tiled = tileParsedScale(parsed, 2);
 
-    // 6 in-period degrees x 2 periods + the equave + the unison
-    expect(tiled.degrees).toHaveLength(14);
+    // unison + (6 degrees + octave) x 2 periods
+    expect(tiled.degrees).toHaveLength(15);
     expect(tiled.degrees[0].pitch.ratio?.n).toBe(1n);
+
+    // Degree 7 is the first period's equave: exact 2/1
+    expect(formatPitch(tiled.degrees[7].pitch)).toBe("2");
+    expect(tiled.degrees[7].period).toBe(0);
 
     // The final placement is the doubled equave: exact 4/1
     const top = tiled.degrees[tiled.degrees.length - 1];
     expect(formatPitch(top.pitch)).toBe("4");
     expect(top.period).toBe(1);
 
-    // Degree 1 and degree 7 are the same ratio one period apart (9/8 and 9/4)
+    // Degree 1 and degree 8 are the same ratio one period apart (9/8 and 9/4)
     expect(formatPitch(tiled.degrees[1].pitch)).toBe("9/8");
-    expect(formatPitch(tiled.degrees[7].pitch)).toBe("9/4");
+    expect(formatPitch(tiled.degrees[8].pitch)).toBe("9/4");
   });
 
   it("keeps the equave as the final placement without duplicating it", () => {
     const parsed = scaleFromText("3/2\n3"); // Bohlen-Pierce-like tritave
     const tiled = tileParsedScale(parsed, 2);
-    expect(tiled.degrees).toHaveLength(4); // unison, 3/2, 9/2, 9/1
-    expect(tiled.degrees[3].pitch.cents).toBeCloseTo(3803.91, 2);
+    expect(tiled.degrees).toHaveLength(5); // unison, 3/2, 3/1, 9/2, 9/1
+    expect(tiled.degrees[2].pitch.cents).toBeCloseTo(1901.955, 2);
+    expect(tiled.degrees[4].pitch.cents).toBeCloseTo(3803.91, 2);
   });
 
   it("falls back to cents arithmetic when a degree is not rational", () => {
     const parsed = scaleFromText("701.9\n1200.");
     const tiled = tileParsedScale(parsed, 2);
     expect(tiled.degrees[1].pitch.cents).toBeCloseTo(701.9, 6);
-    expect(tiled.degrees[2].pitch.cents).toBeCloseTo(1901.9, 6);
+    expect(tiled.degrees[1].pitch.ratio).toBeNull();
+    // Period boundaries land on the equave (itself cents-only here)
+    expect(tiled.degrees[2].pitch.cents).toBeCloseTo(1200, 6);
     expect(tiled.degrees[2].pitch.ratio).toBeNull();
+    expect(tiled.degrees[3].pitch.cents).toBeCloseTo(1901.9, 6);
+    expect(tiled.degrees[3].pitch.ratio).toBeNull();
   });
 
   it("rejects non-positive period counts", () => {

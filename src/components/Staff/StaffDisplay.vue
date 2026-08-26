@@ -90,7 +90,10 @@ function noteColor(note: StaffNote): string {
       </g>
 
       <!-- Treble clef -->
-      <g class="clef" :transform="`translate(${CLEF_WIDTH + 4}, ${STAFF_TOP_Y - 16})`">
+      <g
+        class="clef"
+        :transform="`translate(${CLEF_WIDTH + 4}, ${STAFF_TOP_Y - 16})`"
+      >
         <path
           :d="GLYPH_TREBLE_CLEF.path"
           fill="#333"

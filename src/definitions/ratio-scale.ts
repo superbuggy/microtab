@@ -8,7 +8,6 @@ import {
   rationalToCents,
   type ParsedScale,
   type Rational,
-  type ScaleEntry,
   type ScalePitch,
 } from "./scale-input";
 
@@ -44,9 +43,9 @@ const powPitch = (pitch: ScalePitch, exponent: number): ScalePitch => {
 };
 
 // Tile the parsed scale over `periods` repetitions of its equave. The result
-// always starts at the unison (degree 0); each period contributes every degree,
-// and the equave itself appears once at the very top rather than duplicating
-// the first degree of the next period.
+// always starts at the unison (degree 0); every period contributes all of its
+// degrees followed by the equave itself, so period boundaries appear as guides
+// (e.g. the octave at degree 6 of a hexatonic scale).
 export const tileParsedScale = (
   parsed: ParsedScale,
   periods: number
@@ -66,12 +65,8 @@ export const tileParsedScale = (
   let index = 0;
   for (let period = 0; period < periods; period++) {
     const shift = powPitch(parsed.equave, period);
-    const entries: ScaleEntry[] =
-      period === periods - 1
-        ? [...parsed.degrees, { pitch: parsed.equave, label: null, color: null }]
-        : parsed.degrees;
 
-    for (const entry of entries) {
+    for (const entry of parsed.degrees) {
       index++;
       degrees.push({
         index,
@@ -81,6 +76,15 @@ export const tileParsedScale = (
         color: entry.color,
       });
     }
+
+    index++;
+    degrees.push({
+      index,
+      period,
+      pitch: mulPitch(shift, parsed.equave),
+      label: null,
+      color: null,
+    });
   }
 
   return { degrees, equaveCents: parsed.equave.cents };
