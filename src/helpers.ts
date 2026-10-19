@@ -130,7 +130,7 @@ export const midiNoteNumberToPitchName = (
   shouldPreferSharps = true
 ) => {
   const includedAccidental = shouldPreferSharps ? "#" : "b";
-  const octave = Math.floor(midiNoteNumber / 12);
+  const octave = Math.floor(midiNoteNumber / 12) - 1;
   const pitchClassNumber = midiNoteNumber % 12;
   const isNatural = (pitchClassName: string) => !pitchClassName.match(/[b#+-]/);
   return (

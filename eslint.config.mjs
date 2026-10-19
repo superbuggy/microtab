@@ -6,6 +6,9 @@ import eslintConfigPrettier from 'eslint-config-prettier';
 import parserVue from 'vue-eslint-parser';
 
 export default tseslint.config(
+  {
+    ignores: ['dist/**', '.ignored/**'],
+  },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   eslintConfigPrettier,
@@ -26,7 +29,8 @@ export default tseslint.config(
   },
   {
     rules: {
-      "@typescript-eslint/no-explicit-any": "off"
+      "@typescript-eslint/no-explicit-any": "off",
+      "vue/multi-word-component-names": "off"
     }
   }
 );

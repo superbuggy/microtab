@@ -37,12 +37,12 @@ export type ParsedScale = {
   warnings: string[];
 };
 
-const PRIMES = [
+export const PRIMES = [
   2n, 3n, 5n, 7n, 11n, 13n, 17n, 19n, 23n, 29n, 31n, 37n, 41n, 43n, 47n, 53n,
   59n, 61n, 67n, 71n,
 ];
 
-const gcdBig = (a: bigint, b: bigint): bigint =>
+export const gcdBig = (a: bigint, b: bigint): bigint =>
   b === 0n ? a : gcdBig(b, a % b);
 
 export const rat = (n: bigint, d: bigint = 1n): Rational => {

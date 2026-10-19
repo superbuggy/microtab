@@ -1,10 +1,16 @@
 import { createRouter, createWebHashHistory } from "vue-router";
 import TabSheet from "@/views/TabSheet.vue";
+import TimbreAnalyzer from "@/views/TimbreAnalyzer.vue";
 import WoodShed from "@/views/WoodShed.vue";
 
 const router = createRouter({
   history: createWebHashHistory(import.meta.env.BASE_URL),
   routes: [
+    {
+      path: "/timbre",
+      name: "timbre",
+      component: TimbreAnalyzer,
+    },
     {
       path: "/tab",
       name: "tab",
